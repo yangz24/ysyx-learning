@@ -11,7 +11,11 @@ VL_INLINE_OPT void Vtop___024root___ico_sequent__TOP__0(Vtop___024root* vlSelf) 
     Vtop__Syms* const __restrict vlSymsp VL_ATTR_UNUSED = vlSelf->vlSymsp;
     VL_DEBUG_IF(VL_DBG_MSGF("+    Vtop___024root___ico_sequent__TOP__0\n"); );
     // Body
-    vlSelf->f = ((IData)(vlSelf->a) ^ (IData)(vlSelf->b));
+    vlSelf->F = ((2U & (IData)(vlSelf->Y)) ? ((1U & (IData)(vlSelf->Y))
+                                               ? (IData)(vlSelf->x3)
+                                               : (IData)(vlSelf->x2))
+                  : ((1U & (IData)(vlSelf->Y)) ? (IData)(vlSelf->x1)
+                      : (IData)(vlSelf->x0)));
 }
 
 void Vtop___024root___eval_ico(Vtop___024root* vlSelf) {
@@ -121,9 +125,15 @@ void Vtop___024root___eval_debug_assertions(Vtop___024root* vlSelf) {
     Vtop__Syms* const __restrict vlSymsp VL_ATTR_UNUSED = vlSelf->vlSymsp;
     VL_DEBUG_IF(VL_DBG_MSGF("+    Vtop___024root___eval_debug_assertions\n"); );
     // Body
-    if (VL_UNLIKELY((vlSelf->a & 0xfeU))) {
-        Verilated::overWidthError("a");}
-    if (VL_UNLIKELY((vlSelf->b & 0xfeU))) {
-        Verilated::overWidthError("b");}
+    if (VL_UNLIKELY((vlSelf->x0 & 0xfcU))) {
+        Verilated::overWidthError("x0");}
+    if (VL_UNLIKELY((vlSelf->x1 & 0xfcU))) {
+        Verilated::overWidthError("x1");}
+    if (VL_UNLIKELY((vlSelf->x2 & 0xfcU))) {
+        Verilated::overWidthError("x2");}
+    if (VL_UNLIKELY((vlSelf->x3 & 0xfcU))) {
+        Verilated::overWidthError("x3");}
+    if (VL_UNLIKELY((vlSelf->Y & 0xfcU))) {
+        Verilated::overWidthError("Y");}
 }
 #endif  // VL_DEBUG

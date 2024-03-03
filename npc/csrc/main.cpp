@@ -3,12 +3,12 @@
 #include <assert.h>
 #include "verilated.h"
 #include "verilated_vcd_c.h"
-#include "Vmux2bit41.h"
+#include "Vtop.h"
 
 VerilatedContext* contextp = NULL;
 VerilatedVcdC* tfp = NULL;
 
-static Vmux2bit41* top;
+static Vtop* top;
 
 void step_and_dump_wave(){
 	top->eval();
@@ -19,7 +19,7 @@ void step_and_dump_wave(){
 void sim_init(){
 	contextp = new VerilatedContext;
 	tfp = new VerilatedVcdC;
-	top = new Vmux2bit41;
+	top = new Vtop;
 	contextp->traceEverOn(true);
 	top->trace(tfp,0);
 	tfp->open("dump.vcd");
@@ -40,11 +40,11 @@ int main(int argc, char** argv) {
 	top->Y = 0b00;
 	for(i=0;i<4;i++){
 		for(j=0;j<16;j++){
-			step_and_dump_wave();
 			top->x0 = !top->x0;
 			if(j%2==1) top->x1 = !top->x1;
 			if(j%4==3) top->x2 = !top->x2;
 			if(j%8==7) top->x3 = !top->x3;
+			step_and_dump_wave();
 			printf("Y=%x, x3x2x1x0=%x%x%x%x, F=%x\n", top->Y, top->x3, top->x2, top->x1, top->x0, top->F);
 		}
 	top->Y += 0b01;

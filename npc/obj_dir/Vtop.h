@@ -12,6 +12,7 @@
 
 class Vtop__Syms;
 class Vtop___024root;
+class VerilatedVcdC;
 
 // This class is the main interface to the Verilated model
 class Vtop VL_NOT_FINAL : public VerilatedModel {
@@ -24,9 +25,12 @@ class Vtop VL_NOT_FINAL : public VerilatedModel {
     // PORTS
     // The application code writes and reads these signals to
     // propagate new values into/out from the Verilated model.
-    VL_IN8(&a,0,0);
-    VL_IN8(&b,0,0);
-    VL_OUT8(&f,0,0);
+    VL_IN8(&x0,1,0);
+    VL_IN8(&x1,1,0);
+    VL_IN8(&x2,1,0);
+    VL_IN8(&x3,1,0);
+    VL_IN8(&Y,1,0);
+    VL_OUT8(&F,1,0);
 
     // CELLS
     // Public to allow access to /* verilator public */ items.
@@ -63,6 +67,8 @@ class Vtop VL_NOT_FINAL : public VerilatedModel {
     bool eventsPending();
     /// Returns time at next time slot. Aborts if !eventsPending()
     uint64_t nextTimeSlot();
+    /// Trace signals in the model; called by application code
+    void trace(VerilatedVcdC* tfp, int levels, int options = 0);
     /// Retrieve name of this model instance (as passed to constructor).
     const char* name() const;
 
@@ -70,6 +76,7 @@ class Vtop VL_NOT_FINAL : public VerilatedModel {
     const char* hierName() const override final;
     const char* modelName() const override final;
     unsigned threads() const override final;
+    std::unique_ptr<VerilatedTraceConfig> traceConfig() const override final;
 } VL_ATTR_ALIGNED(VL_CACHE_LINE_BYTES);
 
 #endif  // guard

@@ -1,4 +1,4 @@
-module mux2bit41(
+module top(
 	input	wire [1:0] x0,
 	input	wire [1:0] x1,
 	input	wire [1:0] x2,
