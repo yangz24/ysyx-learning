@@ -22,6 +22,7 @@ sim:
 	@echo
 	@echo "-- VERILATOR-----------------"
 	$(VERILATOR) $(VERILATOR_FLAGS) $(VSRC) $(CSRC) 
+	make -C obj_dir -f Vtop.mk Vtop
 	@echo
 	@echo "To see waveforms,open vlt_dump.vcd in a waveform viewer"
 	@echo 
