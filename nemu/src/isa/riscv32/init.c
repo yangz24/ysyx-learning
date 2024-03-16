@@ -34,6 +34,7 @@ static void restart() {
   cpu.gpr[0] = 0;
 }
 
+/* 将启动文件导入内存*/
 void init_isa() {
   /* Load built-in image. */
   memcpy(guest_to_host(RESET_VECTOR), img, sizeof(img));
