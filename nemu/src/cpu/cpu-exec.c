@@ -31,6 +31,7 @@ static uint64_t g_timer = 0; // unit: us
 static bool g_print_step = false;
 
 void device_update();
+void wp_difftest();
 
 static void trace_and_difftest(Decode *_this, vaddr_t dnpc) {
 #ifdef CONFIG_ITRACE_COND
@@ -38,6 +39,8 @@ static void trace_and_difftest(Decode *_this, vaddr_t dnpc) {
 #endif
   if (g_print_step) { IFDEF(CONFIG_ITRACE, puts(_this->logbuf)); }
   IFDEF(CONFIG_DIFFTEST, difftest_step(_this->pc, dnpc));
+  /* 可配置观察点检测功能是否开启 */
+  IFDEF(CONFIG_WATCHPOINT, wp_difftest());
 }
 
 static void exec_once(Decode *s, vaddr_t pc) {
@@ -77,6 +80,7 @@ static void execute(uint64_t n) {
     exec_once(&s, cpu.pc);
     g_nr_guest_inst ++;
     trace_and_difftest(&s, cpu.pc);
+    /* difftest如果检测出变化，返回的state肯定不是NEMU_RUNNING,所以跳出循环，终端cpu执行*/
     if (nemu_state.state != NEMU_RUNNING) break;
     IFDEF(CONFIG_DEVICE, device_update());
   }
@@ -113,6 +117,7 @@ void cpu_exec(uint64_t n) {
   uint64_t timer_end = get_time();
   g_timer += timer_end - timer_start;
 
+  /* 对execute()执行后返回的state做判断，若为RUNNING和STOP则跳回sdb_mainloop()循环*/
   switch (nemu_state.state) {
     case NEMU_RUNNING: nemu_state.state = NEMU_STOP; break;
 
