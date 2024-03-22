@@ -18,6 +18,7 @@
 
 #include <common.h>
 
+/* 支持支持1、2、4、8字节读出数据*/
 static inline word_t host_read(void *addr, int len) {
   switch (len) {
     case 1: return *(uint8_t  *)addr;

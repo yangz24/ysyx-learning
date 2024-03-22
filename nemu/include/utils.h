@@ -22,6 +22,10 @@
 
 enum { NEMU_RUNNING, NEMU_STOP, NEMU_END, NEMU_ABORT, NEMU_QUIT };
 
+/* state nemu当前状态
+ * halt_pc 暂停时候的pc
+ * halt_ret 暂停结束复位时候的pc
+*/
 typedef struct {
   int state;
   vaddr_t halt_pc;
@@ -58,6 +62,7 @@ uint64_t get_time();
 
 #define ANSI_FMT(str, fmt) fmt str ANSI_NONE
 
+/* log_write是一个写入日志的宏，使用了可变参数__VA_ARGS__ */
 #define log_write(...) IFDEF(CONFIG_TARGET_NATIVE_ELF, \
   do { \
     extern FILE* log_fp; \

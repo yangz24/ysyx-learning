@@ -24,7 +24,9 @@ static uint8_t *pmem = NULL;
 static uint8_t pmem[CONFIG_MSIZE] PG_ALIGN = {};
 #endif
 
+/* 将客户程序地址转化为nemu模拟器这个宿主地址空间 */
 uint8_t* guest_to_host(paddr_t paddr) { return pmem + paddr - CONFIG_MBASE; }
+/* 将nemu这个宿主的地址转化为客户程序的地址空间 */
 paddr_t host_to_guest(uint8_t *haddr) { return haddr - pmem + CONFIG_MBASE; }
 
 static word_t pmem_read(paddr_t addr, int len) {
@@ -35,12 +37,13 @@ static word_t pmem_read(paddr_t addr, int len) {
 static void pmem_write(paddr_t addr, int len, word_t data) {
   host_write(guest_to_host(addr), len, data);
 }
-
+/* 地址越界检查 */
 static void out_of_bound(paddr_t addr) {
   panic("address = " FMT_PADDR " is out of bound of pmem [" FMT_PADDR ", " FMT_PADDR "] at pc = " FMT_WORD,
       addr, PMEM_LEFT, PMEM_RIGHT, cpu.pc);
 }
 
+/* 初始化存储空间 */
 void init_mem() {
 #if   defined(CONFIG_PMEM_MALLOC)
   pmem = malloc(CONFIG_MSIZE);
@@ -56,6 +59,11 @@ void init_mem() {
   Log("physical memory area [" FMT_PADDR ", " FMT_PADDR "]", PMEM_LEFT, PMEM_RIGHT);
 }
 
+/* likely是一个宏，用于告诉编译器扣个条件表达式的结果可能为真或为假，
+ * 有助于编译器在生成代码时进行优化，使得执行频率更高的路径更快。
+ * likely：表示条件表达式很可能为真（true），即编译器会认为这个分支是比较常见的情况。
+ * unlikely：表示条件表达式很可能为假（false），即编译器会认为这个分支是不太常见的情况。
+*/
 word_t paddr_read(paddr_t addr, int len) {
   if (likely(in_pmem(addr))) return pmem_read(addr, len);
   IFDEF(CONFIG_DEVICE, return mmio_read(addr, len));
