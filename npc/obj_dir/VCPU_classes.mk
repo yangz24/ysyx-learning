@@ -2,7 +2,7 @@
 # DESCRIPTION: Verilator output: Make include file with class lists
 #
 # This file lists generated Verilated files, for including in higher level makefiles.
-# See Vtop.mk for the caller.
+# See VCPU.mk for the caller.
 
 ### Switches...
 # C11 constructs required?  0/1 (always on now)
@@ -23,28 +23,31 @@ VM_TRACE_FST = 0
 ### Object file lists...
 # Generated module classes, fast-path, compile with highest optimization
 VM_CLASSES_FAST += \
-	Vtop \
-	Vtop___024root__DepSet_h84412442__0 \
-	Vtop___024root__DepSet_heccd7ead__0 \
+	VCPU \
+	VCPU___024root__DepSet_h6c062b6c__0 \
+	VCPU___024root__DepSet_h295dba0a__0 \
 
 # Generated module classes, non-fast-path, compile with low/medium optimization
 VM_CLASSES_SLOW += \
-	Vtop___024root__Slow \
-	Vtop___024root__DepSet_h84412442__0__Slow \
-	Vtop___024root__DepSet_heccd7ead__0__Slow \
+	VCPU__ConstPool_0 \
+	VCPU___024root__Slow \
+	VCPU___024root__DepSet_h6c062b6c__0__Slow \
+	VCPU___024root__DepSet_h295dba0a__0__Slow \
 
 # Generated support classes, fast-path, compile with highest optimization
 VM_SUPPORT_FAST += \
-	Vtop__Trace__0 \
+	VCPU__Dpi \
+	VCPU__Trace__0 \
 
 # Generated support classes, non-fast-path, compile with low/medium optimization
 VM_SUPPORT_SLOW += \
-	Vtop__Syms \
-	Vtop__Trace__0__Slow \
+	VCPU__Syms \
+	VCPU__Trace__0__Slow \
 
 # Global classes, need linked once per executable, fast-path, compile with highest optimization
 VM_GLOBAL_FAST += \
 	verilated \
+	verilated_dpi \
 	verilated_vcd_c \
 	verilated_threads \
 

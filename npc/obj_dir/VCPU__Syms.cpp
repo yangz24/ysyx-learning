@@ -1,16 +1,16 @@
 // Verilated -*- C++ -*-
 // DESCRIPTION: Verilator output: Symbol table implementation internals
 
-#include "Vtop__Syms.h"
-#include "Vtop.h"
-#include "Vtop___024root.h"
+#include "VCPU__Syms.h"
+#include "VCPU.h"
+#include "VCPU___024root.h"
 
 // FUNCTIONS
-Vtop__Syms::~Vtop__Syms()
+VCPU__Syms::~VCPU__Syms()
 {
 }
 
-Vtop__Syms::Vtop__Syms(VerilatedContext* contextp, const char* namep, Vtop* modelp)
+VCPU__Syms::VCPU__Syms(VerilatedContext* contextp, const char* namep, VCPU* modelp)
     : VerilatedSyms{contextp}
     // Setup internal state of the Syms class
     , __Vm_modelp{modelp}
@@ -23,4 +23,7 @@ Vtop__Syms::Vtop__Syms(VerilatedContext* contextp, const char* namep, Vtop* mode
     // Setup each module's pointers to their submodules
     // Setup each module's pointer back to symbol table (for public functions)
     TOP.__Vconfigure(true);
+    // Setup export functions
+    for (int __Vfinal = 0; __Vfinal < 2; ++__Vfinal) {
+    }
 }

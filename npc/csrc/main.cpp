@@ -1,15 +1,43 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
-<<<<<<< HEAD
+#include <string.h>
 #include "verilated.h"
 #include "verilated_vcd_c.h"
-#include "Vtop.h"
+#include "VCPU.h"
 
 VerilatedContext* contextp = NULL;
 VerilatedVcdC* tfp = NULL;
 
-static Vtop* top;
+static VCPU* top;
+/* 定义一个img数组用于初始化指令存储器*/
+static const uint img[] = {
+  0b00000000011100000000000010010011, // addi x1 x0 7
+  0b00000000000100001000000010010011, // addi x1 x0 1
+  0b00000000001100001000000100010011, // addi x2 x1 3
+  0b00000000011100001000000100010011, // addi x2 x1 7
+  0b00000000000000000000000001110011  // ebreak
+};
+
+
+
+/* 申请一块内存并初始化 */
+uint* init_mem(size_t size){
+  uint* memory = (uint*)malloc(size * sizeof(uint));
+  memcpy(memory, img, sizeof(img));
+  if (memory == NULL) {
+      printf("Memory allocation failed.\n");
+      exit(0);  
+  }
+  return memory;
+}
+/* 物理内存到npc内存的转化 */
+uint guest_to_host(uint paddr) { return paddr - 0x80000000; }
+/* 读内存里的指令 */
+uint mem_read(uint* memory, uint paddr ){
+  uint vaddr = guest_to_host(paddr);
+  return memory[vaddr >> 2];
+}
 
 void step_and_dump_wave(){
 	top->eval();
@@ -20,10 +48,10 @@ void step_and_dump_wave(){
 void sim_init(){
 	contextp = new VerilatedContext;
 	tfp = new VerilatedVcdC;
-	top = new Vtop;
+	top = new VCPU; 
 	contextp->traceEverOn(true);
 	top->trace(tfp,0);
-	tfp->open("dump.vcd");
+	tfp->open("./obj_dir/waveform.vcd");
 }
 
 void sim_exit(){
@@ -31,50 +59,39 @@ void sim_exit(){
 	tfp->close();
 }
 
-int main(int argc, char** argv) {
-	sim_init();
-	int i,j;
-	top->x0 = 0b00;
-	top->x1 = 0b00;
-	top->x2 = 0b00;
-	top->x3 = 0b00;
-	top->Y = 0b00;
-	for(i=0;i<4;i++){
-		for(j=0;j<16;j++){
-			top->x0 = !top->x0;
-			if(j%2==1) top->x1 = !top->x1;
-			if(j%4==3) top->x2 = !top->x2;
-			if(j%8==7) top->x3 = !top->x3;
-			step_and_dump_wave();
-			printf("Y=%x, x3x2x1x0=%x%x%x%x, F=%x\n", top->Y, top->x3, top->x2, top->x1, top->x0, top->F);
-		}
-	top->Y += 0b01;
-	}
-	sim_exit();
-	top->final();
-	delete top;
-	return 0;
+static void single_cycle() {
+  top->clk = 0; step_and_dump_wave();
+  top->clk = 1; step_and_dump_wave(); 
 }
-=======
-#include "Vtop.h"
-#include "verilated.h"
 
+static void reset(int n) {
+  top->rst = 1;
+  while (n -- > 0) single_cycle();
+  top->rst = 0;
+}
 
- int main(int argc, char** argv) {
-      VerilatedContext* contextp = new VerilatedContext;
-      contextp->commandArgs(argc, argv);
-      Vtop* top = new Vtop{contextp};
-      while (!contextp->gotFinish()) {
-            int a = rand() & 1;
-            int b = rand() & 1;
-            top->a = a;
-            top->b = b;
-            top->eval();
-            printf("a = %d, b = %d, f = %d\n", a, b, top->f);
-            assert(top->f == (a ^ b));
-      }
-      delete top;
-      delete contextp;
-      return 0;
+// 检测到ebreak指令，程序运行结束，退出仿真
+extern "C" int npc_trap() {
+    printf("trap!\n");
+    tfp->close();
+    exit(0);
+}
+
+int main() {
+  uint* memory = init_mem(5);
+  int ret = 1;
+  sim_init();
+  reset(10);
+
+  while(1)
+  {
+    top->Instr = mem_read(memory, top->InstrMemRdAddr);
+    single_cycle();
   }
->>>>>>> pa0
+
+  free(memory); 
+  sim_exit();
+  top->final();
+  delete top;
+  return 0;
+}
