@@ -69,11 +69,10 @@ static void free_wp(WP *wp){
   WP* h = head;
   if (h == wp){
     head = head->next;
-    while (h && h->next != wp) h=h->next;
+    // while (h && h->next != wp) h=h->next;
     free_ = h;
     return;
   }
-  // if (h == wp) head = NULL;
   else {
     while (h && h->next != wp) h = h->next;
     assert(h);
