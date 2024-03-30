@@ -24,9 +24,9 @@ static uint8_t *pmem = NULL;
 static uint8_t pmem[CONFIG_MSIZE] PG_ALIGN = {};
 #endif
 
-/* 将客户程序地址转化为nemu模拟器这个宿主地址空间 */
+/* 将客户程序地址转化为npc这个宿主地址空间,其实就是物理地址转化为虚拟地址 */
 uint8_t* guest_to_host(paddr_t paddr) { return pmem + paddr - CONFIG_MBASE; }
-/* 将nemu这个宿主的地址转化为客户程序的地址空间 */
+/* 将npc这个宿主的地址转化为客户程序的地址空间,其实就是虚拟地址转化为物理地址 */
 paddr_t host_to_guest(uint8_t *haddr) { return haddr - pmem + CONFIG_MBASE; }
 
 static word_t pmem_read(paddr_t addr, int len) {
@@ -65,14 +65,21 @@ void init_mem() {
  * unlikely：表示条件表达式很可能为假（false），即编译器会认为这个分支是不太常见的情况。
 */
 word_t paddr_read(paddr_t addr, int len) {
-  if (likely(in_pmem(addr))) return pmem_read(addr, len);
+  if (likely(in_pmem(addr))) {
+    IFDEF(CONFIG_MTRACE, display_pread(addr, len));
+    return pmem_read(addr, len);
+  }
   IFDEF(CONFIG_DEVICE, return mmio_read(addr, len));
   out_of_bound(addr);
   return 0;
 }
 
 void paddr_write(paddr_t addr, int len, word_t data) {
-  if (likely(in_pmem(addr))) { pmem_write(addr, len, data); return; }
+  if (likely(in_pmem(addr))) { 
+    IFDEF(CONFIG_MTRACE, display_pwrite(addr, len, data));
+    pmem_write(addr, len, data); 
+    return; 
+  }
   IFDEF(CONFIG_DEVICE, mmio_write(addr, len, data); return);
   out_of_bound(addr);
 }

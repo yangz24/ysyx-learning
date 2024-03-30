@@ -82,3 +82,12 @@ uint64_t get_time();
 
 
 #endif
+
+// in diaasm.cc
+extern void disassemble(char *str, int size, uint64_t pc, uint8_t *code, int nbyte);
+// in itrace.c
+void trace_inst(word_t pc, uint32_t inst);
+void display_trace();
+// in mtrace.c
+void display_pread(paddr_t addr, int len);
+void display_pwrite(paddr_t addr, int len, word_t data);

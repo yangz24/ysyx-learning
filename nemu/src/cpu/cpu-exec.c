@@ -127,6 +127,8 @@ void cpu_exec(uint64_t n) {
            (nemu_state.halt_ret == 0 ? ANSI_FMT("HIT GOOD TRAP", ANSI_FG_GREEN) :
             ANSI_FMT("HIT BAD TRAP", ANSI_FG_RED))),
           nemu_state.halt_pc);
+      // 打印错误指令发生时执行的最近的16(可配置)条指令
+      display_trace();  
       // fall through
     case NEMU_QUIT: statistic();
   }
