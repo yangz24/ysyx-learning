@@ -26,5 +26,12 @@ assign busB = rf[Rb];
 always @(posedge Wrclk) begin
     if (RegWr) rf[Rw] <= busW;
   end
-  
+
+// 返回寄存器rf[10]的值, 此法有错误
+// import "DPI-C" function void display_regs(input int regi);
+
+// always @(busA) begin
+//     display_regs(rf[10]);
+// end
+
 endmodule

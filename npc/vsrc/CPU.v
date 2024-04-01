@@ -4,7 +4,7 @@ module CPU #(
     input wire clk,
     input wire rst,
     // 指令输入
-    output wire [DATA_WIDTH-1:0] InstrMemRdAddr,  // 读下一条指令存储器地址
+    output wire [DATA_WIDTH-1:0] PC,  // 读下一条指令存储器地址
     input wire [DATA_WIDTH-1:0] Instr,   // 获取指令
     // 存储器
     output wire MemOper,
@@ -19,7 +19,6 @@ module CPU #(
 wire PCAsrc, PCBsrc;
 wire [DATA_WIDTH-1:0] Imm;
 wire [DATA_WIDTH-1:0] busA, busB, busW;
-wire [DATA_WIDTH-1:0] PC;
 wire [2:0] Branch;
 wire Less = 0, Zero;
 wire [4:0] rs1, rs2, rd;
@@ -37,7 +36,6 @@ wire MemOp;
 wire [DATA_WIDTH-1:0] ALUa, ALUb;
 wire [DATA_WIDTH-1:0] ALUout;
 
-assign InstrMemRdAddr = PC;
 assign MemWrEn = MemWr;
 assign MemOper = MemOp;
 assign MemDATAIn = busB;

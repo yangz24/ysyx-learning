@@ -18,9 +18,9 @@ assign  func3  = Instr[14:12];
 assign  func7  = Instr[31:25];
 
 import "DPI-C" function void npc_trap();
-always @(*) begin
+always @(Instr) begin
     case (Instr)
-        32'b00000000000000000000000001110011: begin npc_trap(); end    // ebreak
+        32'b00000000000100000000000001110011: begin npc_trap(); end    // ebreak
         default:;
     endcase
 end

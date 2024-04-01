@@ -92,6 +92,8 @@
 #define BITS(x, hi, lo) (((x) >> (lo)) & BITMASK((hi) - (lo) + 1)) // similar to x[hi:lo] in verilog
 /* 这个宏用于进行符号扩展操作。它创建一个结构体，将输入x的值存储在长度为len的有符号整数字段中，并返回该值的无符号表示。
  * 这样可以实现将有符号整数符号扩展为更长的无符号整数。
+ * @param x 为需要进行符号扩展的数
+ * @param len, 为该数的长度
  */
 #define SEXT(x, len) ({ struct { int64_t n : len; } __x = { .n = x }; (uint64_t)__x.n; })
 

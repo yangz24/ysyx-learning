@@ -1,4 +1,4 @@
-module ALU #(DATA_WIDTH = 32) (
+module ALU #( DATA_WIDTH = 32) (
     input [DATA_WIDTH-1:0] A, // 操作数1
     input [DATA_WIDTH-1:0] B, // 操作数2
     input [3:0] ALUctr, // ALU 控制信号，用于选择ALU的具体操作
@@ -38,3 +38,4 @@ wire [DATA_WIDTH-1:0] shift_amount = {27'b0, B[4:0]};
     end
 
 endmodule
+
