@@ -133,6 +133,12 @@ static int decode_exec(Decode *s) {
 }
 
 int isa_exec_once(Decode *s) {
+
+  /* inst_fetch()最终会根据参数len来调用vaddr_ifetch()(在nemu/src/memory/vaddr.c中定义), 
+   * 而目前vaddr_ifetch()又会通过paddr_read()来访问物理内存中的内容. 
+   * 因此, 取指操作的本质只不过就是一次内存的访问而已.len为4是因为内存是由uint8_t类型的数组组成的，
+   * 而指令类型是uint32_t，所以数组4个单元存一条指令。
+   * */
   s->isa.inst.val = inst_fetch(&s->snpc, 4);
   // 取指之后，译码之前，记录最近执行的16（可配置）条指令
   IFDEF(CONFIG_ITRACE, trace_inst(s->pc, s->isa.inst.val));
