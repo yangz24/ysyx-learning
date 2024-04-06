@@ -4,9 +4,12 @@
  * 读写物理地址时会判断输入的地址是否落在开辟的内存区域内,若不在则越界报错
 *******************************************************************/
 
-#include "include/common.h"
 #include "include/paddr.h"
 #include "include/host.h"
+#include "include/sim.h"
+
+
+extern VCPU* CPU;
 
 static uint8_t pmem[CONFIG_MSIZE] = {};
 
@@ -32,8 +35,8 @@ static void pmem_write(paddr_t addr, int len, word_t data) {
 
 /* 终端打印访问物理地址溢出的信息 */
 static void out_of_bound(paddr_t addr) {
-  printf("address = " FMT_PADDR " is out of bound of pmem [" FMT_PADDR ", " FMT_PADDR "] at pc = " FMT_WORD,
-      addr, PMEM_LEFT, PMEM_RIGHT, top->PC);
+  printf("address = " FMT_PADDR " is out of bound of pmem [" FMT_PADDR ", " FMT_PADDR "] at pc = " FMT_WORD "\n",
+      addr, PMEM_LEFT, PMEM_RIGHT, PC);
 }
 
 /* 初始化存储空间(暂且不实现)并打印内存空间首尾位置 */
@@ -48,6 +51,7 @@ word_t paddr_read(paddr_t addr, int len) {
     return pmem_read(addr, len);
   }
   out_of_bound(addr);
+  // assert(0);
   return 0;
 }
 
@@ -59,4 +63,26 @@ void paddr_write(paddr_t addr, int len, word_t data) {
     return; 
   }
   out_of_bound(addr);
+}
+
+/* verilog代码中内存控制模块调用的函数 MemCtrl.v */
+extern "C" int mem_read(paddr_t Addr, int isInstr) {
+  word_t data_out = paddr_read(Addr, 4);
+  if (isInstr)
+  {
+    // printf("InstrAddr = 0x%08x, Instr = 0x%08x\n", Addr, data_out);
+    return data_out;
+  }
+  // printf("MemAddr = 0x%08x\n", Addr);
+  return data_out;
+}
+
+extern "C" void mem_write(paddr_t Addr, paddr_t DataIn, char Wmask) { 
+  for (size_t i = 0; i < 4; i++)
+  {
+    if (Wmask >> i & 0x1)
+    {
+      paddr_write(Addr+i, 1, DataIn >> i*8);
+    }
+  }
 }

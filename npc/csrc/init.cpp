@@ -3,9 +3,6 @@
 ***************************************************************************************/
 
 #include "include/paddr.h"
-#include "verilated.h"
-#include "verilated_vcd_c.h"
-#include "VCPU.h"
 
 // this is not consistent with uint8_t
 // but it is ok since we do not access the array directly
@@ -20,7 +17,7 @@ static const uint32_t img [] = {
 
 
 /* 将启动文件导入内存*/
-void init_start() {
+void build_in_img() {
   /* Load built-in image. */
   memcpy(guest_to_host(RESET_VECTOR), img, sizeof(img));
 }

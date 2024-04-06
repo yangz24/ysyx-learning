@@ -18,7 +18,7 @@ static inline word_t host_read(void *addr, int len) {
   }
 }
 
-/* 支持支持1、2、4、8字节写出数据*/
+/* 支持支持1、2、4、8字节写入数据*/
 static inline void host_write(void *addr, int len, word_t data) {
   switch (len) {
     case 1: *(uint8_t  *)addr = data; return;

@@ -17,17 +17,51 @@
 #include <cpu/cpu.h>
 #include <difftest-def.h>
 #include <memory/paddr.h>
+#include "../../isa/riscv32/local-include/reg.h"
+
+typedef struct diff_context_t {
+  word_t gpr[32];
+  word_t pc;
+}diff_context;
 
 __EXPORT void difftest_memcpy(paddr_t addr, void *buf, size_t n, bool direction) {
-  assert(0);
+  if (direction == DIFFTEST_TO_REF)
+  {
+    for(size_t i=0; i<n; i++) {
+    	uint8_t mem_data = *((uint8_t *)buf + i);
+    	paddr_write(addr + i, 1, mem_data);
+      // printf("addr+i= %lx, mem_data= %x\n", addr+i, mem_data);
+    }
+  } else {
+    assert(0);
+  }
 }
 
 __EXPORT void difftest_regcpy(void *dut, bool direction) {
-  assert(0);
+  diff_context *dut_state = (diff_context*)dut;
+    if (direction == DIFFTEST_TO_REF)
+  {
+    for (size_t i = 0; i < REG_NUM; i++)
+    {
+      gpr(i) = dut_state->gpr[i];
+      // printf("初始化gpr(%ld) = %x\n", i, gpr(i));
+    }
+    cpu.pc = dut_state->pc;
+    // printf("初始化cpu.pc = %x\n", cpu.pc);
+  } else {
+    for (size_t i = 0; i < REG_NUM; i++)
+    {
+      dut_state->gpr[i] = gpr(i);
+      // printf("复制ref的gpr(%ld) = %x\n", i, gpr(i));
+    }
+    dut_state->pc = cpu.pc;
+    // printf("ref下一条cpu.pc = %x\n", cpu.pc);
+  }
+  
 }
 
 __EXPORT void difftest_exec(uint64_t n) {
-  assert(0);
+  cpu_exec(n);
 }
 
 __EXPORT void difftest_raise_intr(word_t NO) {

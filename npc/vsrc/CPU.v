@@ -2,25 +2,16 @@ module CPU #(
     DATA_WIDTH = 32
 ) (
     input wire clk,
-    input wire rst,
-    // 指令输入
-    output wire [DATA_WIDTH-1:0] PC,  // 读下一条指令存储器地址
-    input wire [DATA_WIDTH-1:0] Instr,   // 获取指令
-    // 存储器
-    output wire MemOper,
-    output wire MemWrEn,
-    output wire [DATA_WIDTH-1:0] MemAddr,
-    // 读数据存储器
-    input wire [DATA_WIDTH-1:0] MemDATAOut,    
-    // 写数据存储器
-    output wire [DATA_WIDTH-1:0] MemDATAIn
+    input wire rst
 );
 
+wire [DATA_WIDTH-1:0] PC;
+wire [DATA_WIDTH-1:0] Instr;
 wire PCAsrc, PCBsrc;
 wire [DATA_WIDTH-1:0] Imm;
 wire [DATA_WIDTH-1:0] busA, busB, busW;
 wire [2:0] Branch;
-wire Less = 0, Zero;
+wire Less, Zero;
 wire [4:0] rs1, rs2, rd;
 wire RegWr;
 wire [6:0] op;
@@ -30,16 +21,17 @@ wire [2:0] ExtOp;
 wire ALUAsrc;
 wire [1:0] ALUBsrc;
 wire [3:0] ALUctr;
+wire [DATA_WIDTH-1:0] Addr;
 wire MemtoReg;
 wire MemWr;
-wire MemOp;
+wire [2:0] MemOp;
+wire [DATA_WIDTH-1:0] DataIn;
+wire [DATA_WIDTH-1:0] DataOut;
 wire [DATA_WIDTH-1:0] ALUa, ALUb;
 wire [DATA_WIDTH-1:0] ALUout;
 
-assign MemWrEn = MemWr;
-assign MemOper = MemOp;
-assign MemDATAIn = busB;
-assign MemAddr = ALUout;
+assign DataIn = busB;
+assign Addr = ALUout;
 
 // PC生成及更新模块
 PcGen  PcGen_inst (
@@ -75,6 +67,14 @@ RegisterFile # (
     .busA(busA),
     .busB(busB)
   );
+
+// 访问指令存储器
+InstrMemCtrl u_InstrMemCtrl(
+  .rst    (rst    ),
+  .RdAddr (PC     ),
+  .Instr  (Instr  )
+);
+
 
 // 预译码模块
 PreDecoder  PreDecoder_inst (
@@ -131,16 +131,30 @@ ALU  ALU_inst (
     .A(ALUa),
     .B(ALUb),
     .ALUctr(ALUctr),
-    .zero(Zero),
+    .Zero(Zero),
+    .Less(Less),
     .ALUout(ALUout)
   );
 
 // 寄存器写回来源选择模块
 Mux21MultiBit  Mux21MultiBit_inst2 (
     .in0(ALUout),
-    .in1(MemDATAOut),
+    .in1(DataOut),
     .Sel(MemtoReg),
     .Dout(busW)
   );
+
+// 访问内存
+MemCtrl u_MemCtrl(
+  // .clk     (clk     ),
+  .rst     (rst     ),
+  .Addr    (Addr    ),
+  .MemOp   (MemOp   ),
+  .MemWr   (MemWr   ),
+  .DataIn  (DataIn  ),
+  .DataOut (DataOut )
+);
+
+
 
 endmodule

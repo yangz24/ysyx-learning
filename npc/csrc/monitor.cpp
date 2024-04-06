@@ -1,20 +1,27 @@
-
-#include "include/common.h"
 #include "include/paddr.h"
 #include <getopt.h>
+#include "include/utils.h"
 
-static int is_batch_mode = false;
-void sdb_set_batch_mode() {
-  is_batch_mode = true;
-}
-
-void init_mem();
-void init_start();
-
+/* difftest 初始化相关 */
 static char *log_file = NULL;
 static char *diff_so_file = NULL;
 static char *img_file = NULL;
 static int difftest_port = 1234;
+
+/* 函数申明 */
+void init_mem();
+void build_in_img();
+void init_difftest(char *ref_so_file, long img_size, int port);
+
+int is_batch_mode = false;
+
+void sdb_set_batch_mode() {
+  is_batch_mode = true;
+}
+
+
+
+
 
 static long load_img() {
   if (img_file == NULL) {
@@ -79,10 +86,16 @@ void init_monitor(int argc, char *argv[]) {
   init_mem();
 
   /* initialization. Copy built-in image into memory */
-  init_start();
+  build_in_img();
 
   /* Load the image to memory. This will overwrite the built-in image. */
   long img_size = load_img();
+
+    /* Initialize differential testing. */
+  init_difftest(diff_so_file, img_size, difftest_port);
+
+  /* 初始化反汇编 */
+  init_disasm("riscv32-pc-linux-gnu");
 
 }
 

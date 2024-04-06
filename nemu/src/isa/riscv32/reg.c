@@ -28,7 +28,7 @@ const char *regs[] = {
  * %-3s中，-表示左对齐，否则默认右对齐； 3表示每个字符串占据3个字符宽度。
  */
 void isa_reg_display() {
-  for (size_t i = 0; i < (sizeof(regs) / sizeof(regs[0])); i++)
+  for (size_t i = 0; i < ARRLEN(regs) ; i++)
   {
     printf(ANSI_FMT("%-3s\t", ANSI_FG_GREEN), regs[i]);
     printf("%#10x\t", gpr(i));

@@ -146,7 +146,7 @@ void cpu_exec(uint64_t n) {
   uint64_t timer_end = get_time();
   g_timer += timer_end - timer_start;
 
-  /* 对execute()执行后返回的state做判断，若为RUNNING和STOP则跳回sdb_mainloop()循环*/
+  /* 对execute()执行后返回的state做判断，若为RUNNING则改为STOP,跳回sdb_mainloop()循环*/
   switch (nemu_state.state) {
     case NEMU_RUNNING: nemu_state.state = NEMU_STOP; break;
 

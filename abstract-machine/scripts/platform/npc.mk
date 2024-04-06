@@ -14,6 +14,7 @@ LDFLAGS   += -T $(AM_HOME)/scripts/linker.ld \
 
 NPCFLAGS += -l $(shell dirname $(IMAGE).elf)/npc-log.txt
 NPCFLAGS += -b
+NPCFLAGS += --diff=/home/ginoyang/ysyx-workbench/nemu/build/riscv32-nemu-interpreter-so
 
 LDFLAGS   += --gc-sections -e _start
 CFLAGS += -DMAINARGS=\"$(mainargs)\"

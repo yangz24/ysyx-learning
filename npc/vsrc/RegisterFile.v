@@ -24,7 +24,9 @@ assign busB = rf[Rb];
 
 // 寄存器写操作
 always @(posedge Wrclk) begin
-    if (RegWr) rf[Rw] <= busW;
+    if (RegWr && Rw != 0) begin
+      rf[Rw] <= busW;
+    end
   end
 
 // 返回寄存器rf[10]的值, 此法有错误

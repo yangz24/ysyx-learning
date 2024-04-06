@@ -18,7 +18,8 @@
 
 #include <common.h>
 
-extern const char* regs[];
+extern const char *regs[];
+#define REG_NUM  ARRLEN(cpu.gpr) 
 
 static inline int check_reg_idx(int idx) {
   IFDEF(CONFIG_RT_CHECK, assert(idx >= 0 && idx < MUXDEF(CONFIG_RVE, 16, 32)));

@@ -19,6 +19,7 @@ paddr_t host_to_guest(uint8_t *haddr);
 
 /* 检查物理地址是否溢出 */
 static inline bool in_pmem(paddr_t addr) {
+  // printf("address = 0x%08x\n", addr);
   return addr - CONFIG_MBASE < CONFIG_MSIZE;
 }
 
@@ -29,5 +30,10 @@ word_t paddr_read(paddr_t addr, int len);
  * mem的物理地址空间范围为：[0x80000000, 0x87ffffff]
 */
 void paddr_write(paddr_t addr, int len, word_t data);
+
+/* verilog代码中内存控制模块调用的函数 MemCtrl.v */
+extern "C" int mem_read(paddr_t Addr, int isInstr);
+
+extern "C" void mem_write(paddr_t Addr, paddr_t DataIn, char Wmask);
 
 #endif
