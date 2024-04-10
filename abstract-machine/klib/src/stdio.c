@@ -2,110 +2,189 @@
 #include <klib.h>
 #include <klib-macros.h>
 #include <stdarg.h>
+#include <math.h>
 
 #if !defined(__ISA_NATIVE__) || defined(__NATIVE_USE_KLIB__)
 
-static int int2str(int n, char *s, int base);
+#define BUFSIZE 2048
+
+#define MAKE_BUF \
+  int ph_width = fmt_width - arg_width; \
+  int buf_width = fmt_width>arg_width?fmt_width:arg_width; \
+  char buf[buf_width]; \
+  for (int _i = ph_width-1; _i >= 0 ; _i--) \
+    buf[_i] = placeholder; \
+  char *buf_start = buf+buf_width-arg_width
+
+#define OUT_BUF \
+  int real_width = arg_width<n?arg_width:n; \
+  memcpy(out, buf, real_width); \
+  out += real_width; \
+  n -= real_width
+
+
+static int width_int(int32_t n, int base) {
+    int ret = n < 0 + (base==8?1:(base==16?2:0));
+    do ++ret; while ((n /= base) != 0);
+    return ret;
+}
+
+static int width_uint(uint32_t n, int base) {
+    int ret = base==8?1:(base==16?2:0);
+    do ++ret; while ((n /= base) != 0);
+    return ret;
+}
+
+static void out_int(char *out, int32_t n, int base, int width) {
+    int prefix = 0;
+    if (n < 0) {
+        out[prefix] = '-';
+        n = -n;
+        ++prefix;
+    }
+    if (base == 8) {
+        out[prefix++] = '0';
+    } else if (base == 16) {
+        out[prefix++] = '0';
+        out[prefix++] = 'x';
+    }
+    prefix += base==8?1:(base==16?2:0);
+    for (int i = width-1; i >= prefix; i--, n /= base) {
+        int digit = n % base;
+        out[i] = (digit>=10)?('a'+digit-10):('0'+digit);
+    }
+}
+
+static void out_uint(char *out, uint32_t n, int base, int width) {
+    int prefix = 0;
+    if (base == 8) {
+        out[prefix++] = '0';
+    } else if (base == 16) {
+        out[prefix++] = '0';
+        out[prefix++] = 'x';
+    }
+    for (int i = width-1; i >= prefix; i--, n /= base) {
+        int digit = n % base;
+        out[i] = (digit>=10)?('a'+digit-10):('0'+digit);
+    }
+}
 
 int printf(const char *fmt, ...) {
-  panic("Not implemented");
+  char buffer[BUFSIZE];
+  va_list pArgs;
+  va_start(pArgs, fmt);
+  int ret = vsprintf(buffer, fmt, pArgs);
+  va_end(pArgs);
+  for (int i = 0; i < ret; i++) putch(buffer[i]);
+  return ret;
 }
 
-int vsprintf(char *out, const char *fmt, va_list ap) {
-  panic("Not implemented");
-}
-/**
- * @brief 将格式化的数据写入到指定的字符串缓冲区（不是标准输出流）
- * @param out 存储格式化后的字符串的缓冲区
- * @param fmt 格式化字符串
- * @param ... 可变参数列表
- * @return 写入缓冲区的字符数
-*/
 int sprintf(char *out, const char *fmt, ...) {
-  va_list ap;
-  va_start(ap, fmt);
-
-  int len = 1024;
-
-  return vsnprintf(out, len, fmt, ap);
+  va_list pArgs;
+  va_start(pArgs, fmt);
+  int ret = vsprintf(out, fmt, pArgs);
+  va_end(pArgs);
+  return ret;
 }
 
 int snprintf(char *out, size_t n, const char *fmt, ...) {
-  panic("Not implemented");
+  va_list pArgs;
+  va_start(pArgs, fmt);
+  int ret = vsnprintf(out, n, fmt, pArgs);
+  va_end(pArgs);
+  return ret;
 }
-/**
- * @brief 将格式化的数据写入字符数组，指定最大写入的字符数目，与寻传递可变参数列表
- * @param out 存储格式化后的字符串的缓冲区
- * @param n 指定存储空间大小，防止发生缓冲区溢出
- * @param fmt 格式化字符串，包含格式说明符和文本内容
- * @param ap 是一个va_list类型，用于处理可变参数列表
- * @return out - start 返回实际写入缓冲区的字符数，不包括终止符\0
-*/
+
+int vsprintf(char *out, const char *fmt, va_list ap) {
+  return vsnprintf(out, UINT32_MAX, fmt, ap);
+}
+
 int vsnprintf(char *out, size_t n, const char *fmt, va_list ap) {
-  char* start = out;
-  while (n-- && *fmt)
-  {
-        if (*fmt != '%')
-        {
-          *out++ = *fmt;
-        } else
-          {
-            switch (*(++fmt))
-            {
-            case 's': char* s = va_arg(ap, char*); while (*s != '\0') *out++ = *s++; break; // string
-            case 'c': char c = (char)va_arg(ap, int); *out++ = c; break; // char
-            case '%': *out++ = '%';  break;                  // 转义
-            case 'd': int d = va_arg(ap, int);  out += int2str(d, out, 10); break; // 整数
-            default: return -1;
+    char *start = out;
+    bool ps = false; // has meet percent sign '%'
+    --n; // for '\0'
+    char placeholder = ' ';
+    int fmt_width = 0;
+
+    for (; n && *fmt; ++fmt) {
+        if (!ps) {
+            if (*fmt == '%') ps = true;
+            else {
+                *out++ = *fmt;
+                --n;
             }
-          }
-        fmt++;
-  }
-  *out = '\0';
-  va_end(ap);
-  return out - start;
+            continue;
+        }
+        switch (*fmt) {
+            case '%': *out++ = *fmt; --n; break;
+            case 'd': {
+                int32_t arg = va_arg(ap, int32_t);
+                int arg_width = width_int(arg, 10);
+                MAKE_BUF;
+                out_int(buf_start, arg, 10, arg_width);
+                OUT_BUF;
+                break;
+            }
+            case 'u': {
+                uint32_t arg = va_arg(ap, uint32_t);
+                int arg_width = width_uint(arg, 10);
+                MAKE_BUF;
+                out_int(buf_start, arg, 10, arg_width);
+                OUT_BUF;
+                break;
+            }
+            case 'l': { 
+                continue;
+            }
+            case 'x': case 'p': {
+                uint32_t arg = va_arg(ap, uint32_t);
+                int arg_width = width_uint(arg, 16);
+                MAKE_BUF;
+                out_uint(buf_start, arg, 16, arg_width);
+                OUT_BUF;
+                break;
+            }
+            case 's': {
+                char *arg = va_arg(ap, char*);
+                int arg_width = strlen(arg);
+                MAKE_BUF;
+                strcpy(buf_start, arg);
+                OUT_BUF;
+                break;
+            }
+            case 'c': {
+                char arg = va_arg(ap, int);
+                *out++ = arg;
+                --n;
+                break;
+            }
+            default: {
+                char c = *fmt;
+                if (c >= '0' && c <= '9') { // e.g. %09d, %9d, %6s
+                    placeholder = c=='0'?'0':' ';
+                    fmt_width = 0;
+                    if (placeholder == '0') ++fmt;
+                    while (*fmt >= '0' && *fmt <= '9') {
+                        fmt_width *= 10;
+                        fmt_width += *fmt-'0';
+                        ++fmt;
+                    }
+                    --fmt;
+                }
+                continue;
+            }
+        }
+        ps = false;
+        fmt_width = 0;
+    }
+    *out++ = '\0';
+    return out-start;
 }
-/**
- * @brief 颠倒字符串的字符
- * @param s 待颠倒的字符串
- * @param len 字符串的长度
- * @return 无返回值
-*/
-static void reverse(char *s, int len) {
-  char *end = s + len - 1;
-  char tmp;
-  while (s < end) {
-    tmp = *s;
-    *s++ = *end;
-    *end-- = tmp;
-  }
-}
-/**
- * @brief 将给定进制的整数转化为字符串存储在给定地址中
- * @param n 给定字符串
- * @param s 给定字符地址
- * @param base 给定进制
- * @return int i 字符串长度
-*/
-static int int2str(int n, char *s, int base) {
-  assert(base <= 16);
 
-  int i = 0, sign = n, bit;
-  // 若n为负数，转化为正数处理，后面再处理符号
-  if (sign < 0) n = -n;
-  do {
-    bit = n % base;
-    // 将每一位的数字通过加上基准字符的ascii码转化为字符
-    if (bit >= 10) s[i++] = 'a' + bit - 10;
-    else s[i++] = '0' + bit;  // 字符'0'的ascii码为48, 这里也可以用 s[i++] = 48 + bit;
-  } while ((n /= base) > 0);
-  // 加上符号位
-  if (sign < 0) s[i++] = '-';
-  s[i] = '\0';
-  // 反转生成的字符串，确保生成的字符串保持正确顺序
-  reverse(s, i);
-
-  return i;
+int puts(const char * str) {
+  for (const char *c = str; *c; c++) putch(*c);
+  putch('\n');
+  return 0;
 }
 
 #endif

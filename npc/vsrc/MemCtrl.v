@@ -1,7 +1,7 @@
 module MemCtrl #(
     DATA_WIDTH = 32
 ) (
-    // input wire clk,
+    input wire clk,
     input wire rst,
     input wire [DATA_WIDTH-1:0] Addr,
     input wire [2:0] MemOp,
@@ -15,7 +15,7 @@ reg [DATA_WIDTH-1:0] DataOutTmp;
 import "DPI-C" function int mem_read(input int Addr, input int isInstr);
 import "DPI-C" function void mem_write(input int Addr, input int DataIn, input byte Wmask);
 
-always @(*) begin
+always @(negedge clk) begin
     if (rst) begin
         DataOutTmp = 0;
         DataOut = 0;

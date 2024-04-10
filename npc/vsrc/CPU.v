@@ -146,7 +146,7 @@ Mux21MultiBit  Mux21MultiBit_inst2 (
 
 // 访问内存
 MemCtrl u_MemCtrl(
-  // .clk     (clk     ),
+  .clk     (clk     ),
   .rst     (rst     ),
   .Addr    (Addr    ),
   .MemOp   (MemOp   ),

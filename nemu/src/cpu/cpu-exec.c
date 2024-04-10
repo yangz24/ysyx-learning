@@ -157,7 +157,9 @@ void cpu_exec(uint64_t n) {
             ANSI_FMT("HIT BAD TRAP", ANSI_FG_RED))),
           nemu_state.halt_pc);
       // 打印错误指令发生时执行的最近的16(可配置)条指令
+      #ifdef CONFIG_ITRACE
       display_trace();  
+      #endif
       // fall through
     case NEMU_QUIT: statistic();
   }

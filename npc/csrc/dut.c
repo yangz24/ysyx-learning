@@ -8,9 +8,13 @@
 #include "include/sim.h"
 #include "include/isa.h"
 
+
+
+#ifdef CONFIG_DIFFTEST
+
 enum { DIFFTEST_TO_DUT, DIFFTEST_TO_REF };
 
-CPU_state cpu; 
+extern CPU_state cpu;
 
 
 /* 回调函数 */
@@ -87,5 +91,7 @@ void difftest_step(vaddr_t pc) {
   ref_difftest_regcpy(&ref_r, DIFFTEST_TO_DUT);
 
   checkregs(&ref_r, pc);
+  // printf("PC = 0x%08x\n", pc);
 }
 
+#endif

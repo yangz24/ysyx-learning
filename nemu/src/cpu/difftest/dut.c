@@ -19,7 +19,6 @@
 #include <cpu/cpu.h>
 #include <memory/paddr.h>
 #include <utils.h>
-#include <difftest-def.h>
 #include <cpu/difftest.h>
 
 void (*ref_difftest_memcpy)(paddr_t addr, void *buf, size_t n, bool direction) = NULL;
@@ -116,7 +115,7 @@ void difftest_step(vaddr_t pc, vaddr_t npc) {
       panic("can not catch up with ref.pc = " FMT_WORD " at pc = " FMT_WORD, ref_r.pc, pc);
     return;
   }
-
+  /* 如果调用了difftest_skip_ref()函数, 会将is_skip_ref置1, 从而跳过此次difftest, 只将dut的寄存器状态拷贝到ref中 */
   if (is_skip_ref) {
     // to skip the checking of an instruction, just copy the reg state to reference design
     ref_difftest_regcpy(&cpu, DIFFTEST_TO_REF);

@@ -80,9 +80,6 @@ uint64_t get_time();
     log_write(__VA_ARGS__); \
   } while (0)
 
-
-#endif
-
 // in diaasm.cc
 extern void disassemble(char *str, int size, uint64_t pc, uint8_t *code, int nbyte);
 // in itrace.c
@@ -91,3 +88,7 @@ void display_trace();
 // in mtrace.c
 void display_pread(paddr_t addr, int len);
 void display_pwrite(paddr_t addr, int len, word_t data);
+// in dtrace.c
+
+#endif
+

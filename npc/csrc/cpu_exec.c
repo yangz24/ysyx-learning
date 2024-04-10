@@ -2,24 +2,28 @@
 #include "include/sim.h"
 #include "include/utils.h"
 #include "include/isa.h"
+#include "include/config.h"
 
-
-extern CPU_state cpu;
+CPU_state cpu;
 
 #define MAX_INST_TO_PRINT 10
 static bool g_print_step = false;
 
+#ifdef CONFIG_DIFFTEST
 void difftest_step(vaddr_t pc);
+#endif
 
 static void exec_once() {
     single_cycle();
     // CPU->Instr = vaddr_read(CPU->PC, 4);
     /* itrace */
+    #ifdef CONFIG_ITRACE
     trace_inst(PC, Instr);
     if (g_print_step)
     {
       printf("取到指令: pc = " FMT_PADDR  "  Instr = " FMT_WORD "\n", PC, Instr);
     }
+    #endif
     
     cpu.pc = PC;
     for (size_t i = 0; i < 32; i++)
@@ -33,7 +37,9 @@ static void exec_once() {
 static void execute(uint64_t n) {
   for (;n > 0; n --) {
     exec_once();
+    #ifdef CONFIG_DIFFTEST
     difftest_step(PC);
+    #endif
     if (npc_state.state != NPC_RUNNING) break;
   }
 }
@@ -59,7 +65,9 @@ void cpu_exec(uint64_t n) {
            (npc_state.halt_ret == 0 ? "HIT GOOD TRAP " :"HIT BAD TRAP ")),
           npc_state.halt_pc);
       // 打印错误指令发生时或执行到ebreak指令时,执行的最近的16(可配置)条指令:
-      display_trace();  
+      #ifdef CONFIG_ITRACE
+      display_trace(); 
+      #endif 
       // fall through
     case NPC_QUIT: ;
   }

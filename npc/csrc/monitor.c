@@ -1,6 +1,7 @@
 #include "include/paddr.h"
 #include <getopt.h>
 #include "include/utils.h"
+#include "include/config.h"
 
 /* difftest 初始化相关 */
 static char *log_file = NULL;
@@ -92,7 +93,9 @@ void init_monitor(int argc, char *argv[]) {
   long img_size = load_img();
 
     /* Initialize differential testing. */
+  #ifdef CONFIG_DIFFTEST
   init_difftest(diff_so_file, img_size, difftest_port);
+  #endif
 
   /* 初始化反汇编 */
   init_disasm("riscv32-pc-linux-gnu");

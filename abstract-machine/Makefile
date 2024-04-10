@@ -155,6 +155,7 @@ LDFLAGS  += -z noexecstack
 -include $(AM_HOME)/scripts/$(ARCH).mk
 
 ### Fall back to native gcc/binutils if there is no cross compiler
+# 没有指定架构就使用native
 ifeq ($(wildcard $(shell which $(CC))),)
   $(info #  $(CC) not found; fall back to default gcc and binutils)
   CROSS_COMPILE :=

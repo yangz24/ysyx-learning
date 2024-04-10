@@ -1,5 +1,7 @@
 #include "include/utils.h"
 
+#ifdef CONFIG_ITRACE
+
 #define MAX_TRACE_SIZE 16
 extern "C" void disassemble(char *str, int size, uint64_t pc, uint8_t *code, int nbyte);
 
@@ -50,3 +52,5 @@ void display_trace() {
     // 重置终端文本颜色为默认值
     puts(ANSI_NONE);
 }
+
+#endif

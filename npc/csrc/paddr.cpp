@@ -11,6 +11,8 @@
 
 extern VCPU* CPU;
 
+uint64_t get_time();
+
 static uint8_t pmem[CONFIG_MSIZE] = {};
 
 /* 将客户程序地址转化为npc这个宿主地址空间,其实就是物理地址转化为虚拟地址 */
@@ -50,7 +52,20 @@ word_t paddr_read(paddr_t addr, int len) {
     // IFDEF(CONFIG_MTRACE, display_pread(addr, len));
     return pmem_read(addr, len);
   }
-  out_of_bound(addr);
+  #ifdef CONFIG_DEVICE
+    uint64_t us = get_time();
+    word_t real_time;
+    // printf("us = %lld\n", us);
+    if (addr == 0xa0000048)
+    {
+      real_time = (word_t)us;
+    }
+    if (addr == 0xa0000048 + 4) {
+      real_time = (word_t)(us >> 32) ; 
+    }
+    return real_time;
+  #endif
+  // out_of_bound(addr);
   // assert(0);
   return 0;
 }
@@ -62,7 +77,18 @@ void paddr_write(paddr_t addr, int len, word_t data) {
     pmem_write(addr, len, data); 
     return; 
   }
-  out_of_bound(addr);
+  #ifdef CONFIG_DEVICE
+    if (addr == 0xa00003F8)
+    {
+      for (size_t i = 0; i < len; i++)
+      {
+        putchar(data);
+        fflush(stdout);
+      }
+    }
+    return;
+  #endif
+  // out_of_bound(addr);
 }
 
 /* verilog代码中内存控制模块调用的函数 MemCtrl.v */
@@ -74,6 +100,7 @@ extern "C" int mem_read(paddr_t Addr, int isInstr) {
     return data_out;
   }
   // printf("MemAddr = 0x%08x\n", Addr);
+ 
   return data_out;
 }
 

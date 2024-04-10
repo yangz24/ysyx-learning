@@ -1,5 +1,7 @@
 #include <common.h>
 
+#ifdef CONFIG_ITRACE
+
 #define MAX_TRACE_SIZE 16
 
 typedef struct 
@@ -49,3 +51,5 @@ void display_trace() {
     // 重置终端文本颜色为默认值
     puts(ANSI_NONE);
 }
+
+#endif
