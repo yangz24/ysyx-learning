@@ -1,7 +1,7 @@
-module PreDecoder #(
-    DATA_WIDTH = 32
-) (
-    input wire [DATA_WIDTH-1:0] Instr,
+`include "define.v"
+
+module PreDecoder (
+    input wire [`DATA_WIDTH-1:0] Instr,
     output wire [6:0] op,
     output wire [4:0] rs1,
     output wire [4:0] rs2,
@@ -17,12 +17,5 @@ assign  rd  = Instr[11:7];
 assign  func3  = Instr[14:12];
 assign  func7  = Instr[31:25];
 
-import "DPI-C" function void npc_trap();
-always @(Instr) begin
-    case (Instr)
-        32'b00000000000100000000000001110011: begin npc_trap(); end    // ebreak
-        default:;
-    endcase
-end
 
 endmodule

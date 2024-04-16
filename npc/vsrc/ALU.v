@@ -1,22 +1,24 @@
-module ALU #( DATA_WIDTH = 32) (
-    input [DATA_WIDTH-1:0] A, // 操作数1
-    input [DATA_WIDTH-1:0] B, // 操作数2
+`include "define.v"
+
+module ALU (
+    input [`DATA_WIDTH-1:0] A, // 操作数1
+    input [`DATA_WIDTH-1:0] B, // 操作数2
     input [3:0] ALUctr, // ALU 控制信号，用于选择ALU的具体操作
     output reg Zero, // 零标志位，如果结果为零则置1
     output reg Less, // 小于标志
-    output reg [DATA_WIDTH-1:0] ALUout // ALU的计算结果
+    output reg [`DATA_WIDTH-1:0] ALUout // ALU的计算结果
 );
 
-wire [DATA_WIDTH-1:0] add;
-wire [DATA_WIDTH-1:0] sub;
-wire [DATA_WIDTH-1:0] shiftleft;
+wire [`DATA_WIDTH-1:0] add;
+wire [`DATA_WIDTH-1:0] sub;
+wire [`DATA_WIDTH-1:0] shiftleft;
 wire less_sign;
 wire less_unsign;
-wire [DATA_WIDTH-1:0] alu_xor;
-wire [DATA_WIDTH-1:0] shift_right_l;
-wire [DATA_WIDTH-1:0] shift_right_a;
-wire [DATA_WIDTH-1:0] alu_or;
-wire [DATA_WIDTH-1:0] alu_and;
+wire [`DATA_WIDTH-1:0] alu_xor;
+wire [`DATA_WIDTH-1:0] shift_right_l;
+wire [`DATA_WIDTH-1:0] shift_right_a;
+wire [`DATA_WIDTH-1:0] alu_or;
+wire [`DATA_WIDTH-1:0] alu_and;
 
 assign add = A + B;
 assign sub = A - B;
@@ -55,19 +57,19 @@ endmodule
 /******************************************************************************
 * 下面这种写法有点问题,待解决
 *******************************************************************************/
-// wire [DATA_WIDTH-1:0] C = ~B + 32'b1;
-// wire [DATA_WIDTH-1:0] shift_amount = {27'b0, B[4:0]};
+// wire [`DATA_WIDTH-1:0] C = ~B + 32'b1;
+// wire [`DATA_WIDTH-1:0] shift_amount = {27'b0, B[4:0]};
 
 // reg overflow = 0;
 // reg carry = 0;
-// reg  [DATA_WIDTH-1:0] AddOut = 0;
+// reg  [`DATA_WIDTH-1:0] AddOut = 0;
 
 // always @(*) begin
 //     if (ALUctr == 4'b0010 || ALUctr == 4'b1010 || ALUctr == 4'b1000) begin
-//         overflow = (A[DATA_WIDTH-1] == C[DATA_WIDTH-1]) && (AddOut[DATA_WIDTH-1] != A[DATA_WIDTH-1]);
+//         overflow = (A[`DATA_WIDTH-1] == C[`DATA_WIDTH-1]) && (AddOut[`DATA_WIDTH-1] != A[`DATA_WIDTH-1]);
 //     end
 //     else if (ALUctr == 4'b0000) begin
-//         overflow = (A[DATA_WIDTH-1] == B[DATA_WIDTH-1]) && (AddOut[DATA_WIDTH-1] != A[DATA_WIDTH-1]);
+//         overflow = (A[`DATA_WIDTH-1] == B[`DATA_WIDTH-1]) && (AddOut[`DATA_WIDTH-1] != A[`DATA_WIDTH-1]);
 //     end
 //     else begin
 //         overflow = 0;
@@ -88,7 +90,7 @@ endmodule
 
 // always @(*) begin
 //     if (ALUctr == 4'b0010) begin
-//         Less = overflow ^ (A[DATA_WIDTH-1] + C[DATA_WIDTH-1]);
+//         Less = overflow ^ (A[`DATA_WIDTH-1] + C[`DATA_WIDTH-1]);
 //     end
 //     else if (ALUctr == 4'b1010) begin
 //         Less = 0 ^ carry;
@@ -124,7 +126,7 @@ endmodule
 //                 if (A[31]) begin
 //                     integer i;
                     
-//                     for ( i = DATA_WIDTH-1; i >= (DATA_WIDTH - shift_amount) ; i = i - 1 ) begin
+//                     for ( i = `DATA_WIDTH-1; i >= (`DATA_WIDTH - shift_amount) ; i = i - 1 ) begin
 //                         ALUout[i] = 1;
 //                     end
 //                 end

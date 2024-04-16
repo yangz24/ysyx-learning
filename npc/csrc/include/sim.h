@@ -18,9 +18,16 @@ extern VerilatedVcdC* tfp;
 extern VCPU* CPU;
 
 
-#define NPC_REG CPU->rootp->CPU__DOT__RegisterFile_inst__DOT__rf
-#define PC CPU->rootp->CPU__DOT__PC
-#define Instr CPU->rootp->CPU__DOT__Instr
+#ifdef CONFIG_DIFFTEST
+#define NEXTPC CPU->nextPC
+#define Instr CPU->diffInstr
+#define DIFFEN CPU->diffen
+#endif
+
+#define PC CPU->diffPC
+#define NPC_REG CPU->rootp->CPU__DOT__u_IDU__DOT__u_RegisterFile__DOT__rf
+#define EBREAK CPU->nextPC
+
 
 
 /* 仿真初始化 */

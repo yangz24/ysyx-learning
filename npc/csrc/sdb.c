@@ -11,7 +11,6 @@ extern void cpu_exec(uint64_t n);
 extern void reg_display();
 static int cmd_help(char *args);
 
-static int is_batch_mode = false;
 
 /* 定义了一个名为 rl_gets 的函数，主要功能是从用户输入中读取一行文本，并将其返回作为字符串。
  * 同时，它会将用户输入的文本添加到历史记录中，以便用户可以通过按上下箭头键来检索先前输入的命令。

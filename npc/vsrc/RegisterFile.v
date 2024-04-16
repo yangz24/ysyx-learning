@@ -1,17 +1,19 @@
-module RegisterFile #(ADDR_WIDTH = 5, DATA_WIDTH = 32) (
+`include "define.v"
+
+module RegisterFile (
   input  wire                  Wrclk,
-  input  wire [ADDR_WIDTH-1:0] Ra,  // a读地址
-  input  wire [ADDR_WIDTH-1:0] Rb,  // b读地址
-  input  wire [ADDR_WIDTH-1:0] Rw,  // rd写地址
-  input  wire [DATA_WIDTH-1:0] busW, // rd写数据
+  input  wire [`ADDR_WIDTH-1:0] Ra,  // a读地址
+  input  wire [`ADDR_WIDTH-1:0] Rb,  // b读地址
+  input  wire [`ADDR_WIDTH-1:0] Rw,  // rd写地址
+  input  wire [`DATA_WIDTH-1:0] busW, // rd写数据
   input  wire                  RegWr, // 写使能
 //   寄存器输出
-  output wire [DATA_WIDTH-1:0] busA,  
-  output wire [DATA_WIDTH-1:0] busB
+  output wire [`DATA_WIDTH-1:0] busA,  
+  output wire [`DATA_WIDTH-1:0] busB
 );
 
 // **表示乘方操作
-reg [DATA_WIDTH-1:0] rf [2**ADDR_WIDTH-1:0];
+reg [`DATA_WIDTH-1:0] rf [2**`ADDR_WIDTH-1:0];
 
 // 寄存器x0恒为0
 always @(posedge Wrclk) begin
@@ -19,8 +21,8 @@ always @(posedge Wrclk) begin
 end
 
 // 寄存器读操作
-assign busA = rf[Ra];
-assign busB = rf[Rb];
+assign busA = (Ra == Rw && Ra != 0 && RegWr)?  busW: rf[Ra];
+assign busB = (Rb == Rw && Rb != 0 && RegWr)?  busW: rf[Rb];
 
 // 寄存器写操作
 always @(posedge Wrclk) begin
@@ -29,11 +31,5 @@ always @(posedge Wrclk) begin
     end
   end
 
-// 返回寄存器rf[10]的值, 此法有错误
-// import "DPI-C" function void display_regs(input int regi);
-
-// always @(busA) begin
-//     display_regs(rf[10]);
-// end
 
 endmodule

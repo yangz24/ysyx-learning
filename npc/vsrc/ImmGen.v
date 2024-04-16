@@ -1,12 +1,12 @@
-module ImmGen #(
-    DATA_WIDTH = 32
-) (
-    input wire [DATA_WIDTH-1:0] Instr,
+`include "define.v"
+
+module ImmGen (
+    input wire [`DATA_WIDTH-1:0] Instr,
     input wire [2:0] ExtOp,
-    output reg [DATA_WIDTH-1:0] Imm 
+    output reg [`DATA_WIDTH-1:0] Imm 
 );
 
-wire [DATA_WIDTH-1:0] immI, immU, immS, immB, immJ;
+wire [`DATA_WIDTH-1:0] immI, immU, immS, immB, immJ;
 
 assign immI = {{20{Instr[31]}}, Instr[31:20]};
 assign immU = {Instr[31:12], 12'b0};

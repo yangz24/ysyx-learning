@@ -1,46 +1,27 @@
-module PcGen #(
-    DATA_WIDTH = 32
-) (
+`include "define.v"
+
+module PcGen (
     input wire clk,
     input wire rst,
-    input wire PCAsrc,
-    input wire PCBsrc,
-    input wire [DATA_WIDTH-1:0] Imm,
-    input wire [DATA_WIDTH-1:0] rs1,
-    output reg [DATA_WIDTH-1:0] PC
+    // input wire PCwrite,
+    input wire PCsrc, 
+    input wire [`DATA_WIDTH-1:0] BranchPC,
+    output reg [`DATA_WIDTH-1:0] PC
 );
 
 parameter RESET_VAL = 32'h80000000;
 
-wire [DATA_WIDTH-1:0] ADDa, ADDb;
-wire [DATA_WIDTH-1:0] NextPC;
+wire [`DATA_WIDTH-1:0] PCA;
+wire [`DATA_WIDTH-1:0] NextPC;
 
-
-Mux21MultiBit  Mux21MultiBit_inst1(
-    .in0(32'd4),
-    .in1(Imm),
-    .Sel(PCAsrc),
-    .Dout(ADDa)
-  );
-
-Mux21MultiBit  Mux21MultiBit_inst2(
-    .in0(PC),
-    .in1(rs1),
-    .Sel(PCBsrc),
-    .Dout(ADDb)
-  );
-
-AdderMultiBit  AdderMultiBit_inst (
-    .A(ADDa),
-    .B(ADDb),
-    .Dout(NextPC)
-  );
+assign PCA = PC + 4;
+assign NextPC = PCsrc? BranchPC : PCA; // 1 跳转, 0 不跳转
 
 always @(posedge clk ) begin
     if (rst) begin
         PC <= RESET_VAL;
     end
-    else begin
+    else begin // if (PCwrite == 1'b1) begin
         PC <= NextPC;
     end
 end

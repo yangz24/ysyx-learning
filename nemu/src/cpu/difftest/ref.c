@@ -24,6 +24,8 @@ typedef struct diff_context_t {
   word_t pc;
 }diff_context;
 
+// extern CPU_state getcpu;
+
 __EXPORT void difftest_memcpy(paddr_t addr, void *buf, size_t n, bool direction) {
   if (direction == DIFFTEST_TO_REF)
   {
@@ -51,7 +53,7 @@ __EXPORT void difftest_regcpy(void *dut, bool direction) {
   } else {
     for (size_t i = 0; i < REG_NUM; i++)
     {
-      dut_state->gpr[i] = gpr(i);
+      dut_state->gpr[i] = cpu.gpr[i];
       // printf("复制ref的gpr(%ld) = %x\n", i, gpr(i));
     }
     dut_state->pc = cpu.pc;

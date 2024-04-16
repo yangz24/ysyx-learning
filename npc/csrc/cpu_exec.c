@@ -15,30 +15,35 @@ void difftest_step(vaddr_t pc);
 
 static void exec_once() {
     single_cycle();
-    // CPU->Instr = vaddr_read(CPU->PC, 4);
     /* itrace */
     #ifdef CONFIG_ITRACE
-    trace_inst(PC, Instr);
-    if (g_print_step)
-    {
-      printf("取到指令: pc = " FMT_PADDR  "  Instr = " FMT_WORD "\n", PC, Instr);
-    }
+      if (DIFFEN)
+      {
+        trace_inst(PC, Instr);
+        if (g_print_step)
+        {
+          printf("取到指令: pc = " FMT_PADDR  "  Instr = " FMT_WORD "\n", PC, Instr);
+        }
+      }
     #endif
     
-    cpu.pc = PC;
-    for (size_t i = 0; i < 32; i++)
-    {
-      cpu.gpr[i] = NPC_REG[i];
-      // printf("执行后的cpu.gpr[%ld]=%x\n", i, cpu.gpr[i]);
-    }
-    // printf("下一条cpu.pc = %x\n", cpu.pc);
+    #ifdef CONFIG_DIFFTEST
+      if (DIFFEN)
+      {
+        cpu.pc = NEXTPC; // 
+        for (size_t i = 0; i < 32; i++)
+        {
+          cpu.gpr[i] = NPC_REG[i];  // 当前执行完的指令的reg
+        }
+      }
+    #endif
 }
 
 static void execute(uint64_t n) {
   for (;n > 0; n --) {
     exec_once();
     #ifdef CONFIG_DIFFTEST
-    difftest_step(PC);
+    if (DIFFEN) difftest_step(cpu.pc);
     #endif
     if (npc_state.state != NPC_RUNNING) break;
   }

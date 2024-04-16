@@ -17,7 +17,7 @@ extern "C" void npc_trap() {
     printf("Execute the ebreak Instruction\n");
     npc_state.state = NPC_END;
     npc_state.halt_ret = NPC_REG[10];
-    npc_state.halt_pc = PC;
+    npc_state.halt_pc = EBREAK;
     return;
 }
 

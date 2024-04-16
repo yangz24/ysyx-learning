@@ -1,9 +1,10 @@
-module InstrMemCtrl #(
-    DATA_WIDTH = 32
-) (
+`include "define.v"
+
+module InstrMemCtrl (
+    input wire clk,
     input wire rst,
-    input wire [DATA_WIDTH-1:0] RdAddr,
-    output reg [DATA_WIDTH-1:0] Instr
+    input wire [`DATA_WIDTH-1:0] RdAddr,
+    output reg [`DATA_WIDTH-1:0] Instr
 );
 
 

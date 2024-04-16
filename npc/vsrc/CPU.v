@@ -1,159 +1,223 @@
-module CPU #(
-    DATA_WIDTH = 32
-) (
-    input wire clk,
-    input wire rst
+`include "define.v"
+
+module CPU (
+    input  wire                         clk                        ,
+    input  wire                         rst                        ,
+    output wire                         diffen                     ,
+    output wire        [`DATA_WIDTH-1:0]diffPC                     ,
+    output wire        [`DATA_WIDTH-1:0]diffInstr                  ,
+    output wire        [`DATA_WIDTH-1:0]nextPC                      
 );
 
-wire [DATA_WIDTH-1:0] PC;
-wire [DATA_WIDTH-1:0] Instr;
-wire PCAsrc, PCBsrc;
-wire [DATA_WIDTH-1:0] Imm;
-wire [DATA_WIDTH-1:0] busA, busB, busW;
-wire [2:0] Branch;
-wire Less, Zero;
-wire [4:0] rs1, rs2, rd;
-wire RegWr;
-wire [6:0] op;
-wire [2:0] func3;
-wire [6:0] func7;
-wire [2:0] ExtOp;
-wire ALUAsrc;
-wire [1:0] ALUBsrc;
-wire [3:0] ALUctr;
-wire [DATA_WIDTH-1:0] Addr;
-wire MemtoReg;
-wire MemWr;
-wire [2:0] MemOp;
-wire [DATA_WIDTH-1:0] DataIn;
-wire [DATA_WIDTH-1:0] DataOut;
-wire [DATA_WIDTH-1:0] ALUa, ALUb;
-wire [DATA_WIDTH-1:0] ALUout;
+wire                                    PCsrc                      ;
+wire                   [`DATA_WIDTH-1:0]BranchPC                   ;
+wire                   [`DATA_WIDTH-1:0]IDReg_PC                   ;
+wire                   [`DATA_WIDTH-1:0]IDReg_Instr                ;
+wire                                    PCwrite                    ;
+wire                                    if_id_write                ;
+wire                   [   6:0]         IDReg_op                   ;
+wire                   [   4:0]         IDReg_rs1                  ;
+wire                   [   4:0]         IDReg_rs2                  ;
+wire                   [   4:0]         IDReg_Regrd                ;
+wire                   [   2:0]         IDReg_Func3                ;
+wire                   [   6:0]         IDReg_Func7                ;
+wire                                    HoldOnRegWr                ;
+wire                   [`ADDR_WIDTH-1:0]Rw                         ;
+wire                   [`DATA_WIDTH-1:0]busW                       ;
+wire                                    ForwardingA                ;
+wire                                    ForwardingB                ;
+wire                                    ClearCtr                   ;
+wire                                    EXReg_MemRd                ;
+wire                   [`ADDR_WIDTH-1:0]EXReg_Regrs1               ;
+wire                   [`ADDR_WIDTH-1:0]EXReg_Regrs2               ;
+wire                                    EXReg_ALUAsrc              ;
+wire                   [   1:0]         EXReg_ALUBsrc              ;
+wire                   [   3:0]         EXReg_ALUctr               ;
+wire                   [   2:0]         EXReg_Branch               ;
+wire                                    EXReg_RegWr                ;
+wire                                    EXReg_MemtoReg             ;
+wire                                    EXReg_MemWr                ;
+wire                   [   2:0]         EXReg_MemOp                ;
+wire                   [`DATA_WIDTH-1:0]EXReg_busA                 ;
+wire                   [`DATA_WIDTH-1:0]EXReg_busB                 ;
+wire                   [`ADDR_WIDTH-1:0]EXReg_Regrd                ;
+wire                   [`DATA_WIDTH-1:0]EXReg_Imm                  ;
+wire                   [`DATA_WIDTH-1:0]EXReg_PC                   ;
+wire                   [`DATA_WIDTH-1:0]EXReg_Instr                ;
+wire                                    WBReg_RegWr                ;
+wire                                    WBReg_MemtoReg             ;
+wire                   [`ADDR_WIDTH-1:0]WBReg_Regrd                ;
+wire                   [`DATA_WIDTH-1:0]WBReg_ALUout               ;
+wire                   [`DATA_WIDTH-1:0]WBReg_DataOut              ;
+wire                   [`DATA_WIDTH-1:0]BranchPC                   ;
+wire                   [`DATA_WIDTH-1:0]WBReg_PC                   ;
+wire                   [`DATA_WIDTH-1:0]WBReg_Instr                ;
 
-assign DataIn = busB;
-assign Addr = ALUout;
+wire                                    BPUClearCtr                ;
 
-// PC生成及更新模块
-PcGen  PcGen_inst (
-    .clk(clk),
-    .rst(rst),
-    .PCAsrc(PCAsrc),
-    .PCBsrc(PCBsrc),
-    .Imm(Imm),
-    .rs1(busA),
-    .PC(PC)
-  );
+wire                   [`DATA_WIDTH-1:0]HoldPC                     ;
+wire                   [`DATA_WIDTH-1:0]HoldInstr                  ;
 
-// 分支跳转判断模块
-BranchCond  BranchCond_inst (
-    .Branch(Branch),
-    .Less(Less),
-    .Zero(Zero),
-    .PCAsrc(PCAsrc),
-    .PCBsrc(PCBsrc)
-  );
+wire                                    if_diffen                  ;
+wire                                    id_diffen                  ;
+wire                                    ex_diffen                  ;
+wire                                    wb_diffen                  ;
 
-// 通用寄存器模块
-RegisterFile # (
-    .DATA_WIDTH(DATA_WIDTH)
-  )
-  RegisterFile_inst (
-    .Wrclk(clk),
-    .Ra(rs1),
-    .Rb(rs2),
-    .Rw(rd),
-    .busW(busW),
-    .RegWr(RegWr),
-    .busA(busA),
-    .busB(busB)
-  );
+wire                                    WBReg_PCsrc, HoldPCsrc     ;
 
-// 访问指令存储器
-InstrMemCtrl u_InstrMemCtrl(
-  .rst    (rst    ),
-  .RdAddr (PC     ),
-  .Instr  (Instr  )
+
+IFU u_IFU(
+    .clk                               (clk                       ),
+    .rst                               (rst                       ),
+  // .PCwrite     (PCwrite     ),
+  // .if_id_write (if_id_write ),
+    .PCsrc                             (PCsrc                     ),
+    .BranchPC                          (BranchPC                  ),
+    .IDReg_PC                          (IDReg_PC                  ),
+    .IDReg_Instr                       (IDReg_Instr               ),
+    .IDReg_op                          (IDReg_op                  ),
+    .IDReg_rs1                         (IDReg_rs1                 ),
+    .IDReg_rs2                         (IDReg_rs2                 ),
+    .IDReg_Regrd                       (IDReg_Regrd               ),
+    .IDReg_Func3                       (IDReg_Func3               ),
+    .IDReg_Func7                       (IDReg_Func7               ),
+    .if_diffen                         (if_diffen                 ),
+    .BPUClearCtr                       (BPUClearCtr               ) 
 );
 
 
-// 预译码模块
-PreDecoder  PreDecoder_inst (
-    .Instr(Instr),
-    .op(op),
-    .rs1(rs1),
-    .rs2(rs2),
-    .rd(rd),
-    .func3(func3),
-    .func7(func7)
-  );
-
-// 译码模块
-Decoder  Decoder_inst (
-    .op(op),
-    .func3(func3),
-    .func7(func7),
-    .ExtOp(ExtOp),
-    .RegWr(RegWr),
-    .ALUAsrc(ALUAsrc),
-    .ALUBsrc(ALUBsrc),
-    .ALUctr(ALUctr),
-    .Branch(Branch),
-    .MemtoReg(MemtoReg),
-    .MemWr(MemWr),
-    .MemOp(MemOp)
-  );
-
-// 立即数生成模块
-ImmGen  ImmGen_inst (
-    .Instr(Instr),
-    .ExtOp(ExtOp),
-    .Imm(Imm)
-  );
-
-// ALU输入选择模块
-Mux21MultiBit  Mux21MultiBit_inst1 (
-    .in0(busA),
-    .in1(PC),
-    .Sel(ALUAsrc),
-    .Dout(ALUa)
-  );
-
-Mux31MultiBit  Mux31MultiBit_inst (
-    .in0(busB),
-    .in1(Imm),
-    .in2(32'd4),
-    .Sel(ALUBsrc),
-    .Dout(ALUb)
-  );
-
-// ALU模块
-ALU  ALU_inst (
-    .A(ALUa),
-    .B(ALUb),
-    .ALUctr(ALUctr),
-    .Zero(Zero),
-    .Less(Less),
-    .ALUout(ALUout)
-  );
-
-// 寄存器写回来源选择模块
-Mux21MultiBit  Mux21MultiBit_inst2 (
-    .in0(ALUout),
-    .in1(DataOut),
-    .Sel(MemtoReg),
-    .Dout(busW)
-  );
-
-// 访问内存
-MemCtrl u_MemCtrl(
-  .clk     (clk     ),
-  .rst     (rst     ),
-  .Addr    (Addr    ),
-  .MemOp   (MemOp   ),
-  .MemWr   (MemWr   ),
-  .DataIn  (DataIn  ),
-  .DataOut (DataOut )
+IDU u_IDU(
+    .clk                               (clk                       ),
+    .rst                               (rst                       ),
+    .IDReg_PC                          (IDReg_PC                  ),
+    .IDReg_Instr                       (IDReg_Instr               ),
+    .IDReg_op                          (IDReg_op                  ),
+    .IDReg_rs1                         (IDReg_rs1                 ),
+    .IDReg_rs2                         (IDReg_rs2                 ),
+    .IDReg_Regrd                       (IDReg_Regrd               ),
+    .IDReg_Func3                       (IDReg_Func3               ),
+    .IDReg_Func7                       (IDReg_Func7               ),
+    .HoldOnRegWr                       (HoldOnRegWr               ),
+    .Rw                                (Rw                        ),
+    .busW                              (busW                      ),
+  // .ClearCtr       (ClearCtr       ),
+    .EXReg_ALUAsrc                     (EXReg_ALUAsrc             ),
+    .EXReg_ALUBsrc                     (EXReg_ALUBsrc             ),
+    .EXReg_ALUctr                      (EXReg_ALUctr              ),
+    .EXReg_Branch                      (EXReg_Branch              ),
+    .EXReg_RegWr                       (EXReg_RegWr               ),
+    .EXReg_MemtoReg                    (EXReg_MemtoReg            ),
+    .EXReg_MemWr                       (EXReg_MemWr               ),
+    .EXReg_MemRd                       (EXReg_MemRd               ),
+    .EXReg_MemOp                       (EXReg_MemOp               ),
+    .EXReg_busA                        (EXReg_busA                ),
+    .EXReg_busB                        (EXReg_busB                ),
+    .EXReg_Regrd                       (EXReg_Regrd               ),
+    .EXReg_Regrs1                      (EXReg_Regrs1              ),
+    .EXReg_Regrs2                      (EXReg_Regrs2              ),
+    .EXReg_Imm                         (EXReg_Imm                 ),
+    .EXReg_PC                          (EXReg_PC                  ),
+    .EXReg_Instr                       (EXReg_Instr               ),
+    .BPUClearCtr                       (BPUClearCtr               ),
+    .if_diffen                         (if_diffen                 ),
+    .id_diffen                         (id_diffen                 ) 
 );
+
+
+EXU u_EXU(
+    .clk                               (clk                       ),
+    .rst                               (rst                       ),
+    .EXReg_ALUAsrc                     (EXReg_ALUAsrc             ),
+    .EXReg_ALUBsrc                     (EXReg_ALUBsrc             ),
+    .EXReg_ALUctr                      (EXReg_ALUctr              ),
+    .EXReg_Branch                      (EXReg_Branch              ),
+    .EXReg_MemtoReg                    (EXReg_MemtoReg            ),
+    .EXReg_MemWr                       (EXReg_MemWr               ),
+    .EXReg_MemRd                       (EXReg_MemRd               ),
+    .EXReg_MemOp                       (EXReg_MemOp               ),
+    .EXReg_RegWr                       (EXReg_RegWr               ),
+    .ForwardingA                       (ForwardingA               ),
+    .ForwardingB                       (ForwardingB               ),
+    .busW                              (busW                      ),
+    .EXReg_busA                        (EXReg_busA                ),
+    .EXReg_busB                        (EXReg_busB                ),
+    .EXReg_Regrd                       (EXReg_Regrd               ),
+    .EXReg_Imm                         (EXReg_Imm                 ),
+    .EXReg_PC                          (EXReg_PC                  ),
+    .EXReg_Instr                       (EXReg_Instr               ),
+    .PCsrc                             (PCsrc                     ),
+    .WBReg_PCsrc                       (WBReg_PCsrc               ),
+    .WBReg_RegWr                       (WBReg_RegWr               ),
+    .WBReg_MemtoReg                    (WBReg_MemtoReg            ),
+    .WBReg_Regrd                       (WBReg_Regrd               ),
+    .WBReg_ALUout                      (WBReg_ALUout              ),
+    .WBReg_DataOut                     (WBReg_DataOut             ),
+    .BranchPC                          (BranchPC                  ),
+    .WBReg_PC                          (WBReg_PC                  ),
+    .WBReg_Instr                       (WBReg_Instr               ),
+    .id_diffen                         (id_diffen                 ),
+    .ex_diffen                         (ex_diffen                 ) 
+);
+
+WBU u_WBU(
+    .clk                               (clk                       ),
+    .rst                               (rst                       ),
+    .WBReg_MemtoReg                    (WBReg_MemtoReg            ),
+    .WBReg_RegWr                       (WBReg_RegWr               ),
+    .WBReg_Regrd                       (WBReg_Regrd               ),
+    .WBReg_ALUout                      (WBReg_ALUout              ),
+    .WBReg_DataOut                     (WBReg_DataOut             ),
+    .WBReg_PC                          (WBReg_PC                  ),
+    .WBReg_Instr                       (WBReg_Instr               ),
+    .HoldOnRegWr                       (HoldOnRegWr               ),
+    .Rw                                (Rw                        ),
+    .busW                              (busW                      ),
+    .HoldPC                            (HoldPC                    ),
+    .HoldInstr                         (HoldInstr                 ),
+    .ex_diffen                         (ex_diffen                 ),
+    .wb_diffen                         (wb_diffen                 ),
+    .WBReg_PCsrc                       (WBReg_PCsrc               ),
+    .HoldPCsrc                         (HoldPCsrc                 ) 
+);
+
+ForwardingUnit u_ForwardingUnit(
+    .EXReg_Regrs1                      (EXReg_Regrs1              ),
+    .EXReg_Regrs2                      (EXReg_Regrs2              ),
+    .WBReg_Regrd                       (WBReg_Regrd               ),
+    .WBReg_RegWr                       (WBReg_RegWr               ),
+    .ForwardingA                       (ForwardingA               ),
+    .ForwardingB                       (ForwardingB               ) 
+);
+
+// HazardDetectionUnit u_HazardDetectionUnit(
+//   .EXReg_MemRd (EXReg_MemRd ),
+//   .EXReg_Regrd (EXReg_Regrd ),
+//   .IDReg_rs1   (IDReg_rs1   ),
+//   .IDReg_rs2   (IDReg_rs2   ),
+//   .PCwrite     (PCwrite     ),
+//   .if_id_write (if_id_write ),
+//   .ClearCtr    (ClearCtr    )
+// );
+
+BPU u_BPU(
+    .PCsrc                             (PCsrc                     ),
+    .BPUClearCtr                       (BPUClearCtr               ) 
+);
+
+`ifdef DIFFTEST
+Difftest u_Difftest(
+    .wb_diffen                         (wb_diffen                 ),
+    .PC                                (HoldPC                    ),
+    .Instr                             (HoldInstr                 ),
+    .diffen                            (diffen                    ),
+    .diffPC                            (diffPC                    ),
+    .diffInstr                         (diffInstr                 ),
+    .IDReg_PC                          (IDReg_PC                  ),
+    .WBReg_PC                          (WBReg_PC                  ),
+    .HoldPCsrc                         (HoldPCsrc                 ),
+    .nextPC                            (nextPC                    ) 
+);
+`endif
 
 
 

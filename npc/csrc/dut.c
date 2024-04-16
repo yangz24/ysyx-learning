@@ -29,21 +29,20 @@ bool difftest_checkregs(CPU_state *ref_r, vaddr_t pc) {
   {
     if (ref_r->gpr[i] != NPC_REG[i])
     {
-      printf("reg[%ld] is different when executing instruction at pc = " FMT_WORD
+      printf("reg[%ld] is different after executing instruction at pc = " FMT_WORD
           ", right = " FMT_WORD ", wrong = " FMT_WORD "\n",
-           i, pc, ref_r->gpr[i], NPC_REG[i]);
+           i, PC, ref_r->gpr[i], NPC_REG[i]);
       return false;
     }
   }
   if (ref_r->pc != pc)
   {
-    printf("pc is different after executing instruction at pc = " FMT_WORD
-    ", right = " FMT_WORD ", wrong = " FMT_WORD "\n", pc, ref_r->pc, PC);
+    printf("next pc is different after executing instruction at pc = " FMT_WORD
+    ", right = " FMT_WORD ", wrong = " FMT_WORD "\n", PC, ref_r->pc, pc);
     return false;
   }
   return true;
 }
-
 
 /* 初始化difftest */
 void init_difftest(char *ref_so_file, long img_size, int port) {
@@ -79,7 +78,7 @@ void init_difftest(char *ref_so_file, long img_size, int port) {
 static void checkregs(CPU_state *ref, vaddr_t pc) {
   if (!difftest_checkregs(ref, pc)) {
     npc_state.state = NPC_ABORT;
-    npc_state.halt_pc = pc;
+    npc_state.halt_pc = PC;
     // reg_display();
   }
 }
