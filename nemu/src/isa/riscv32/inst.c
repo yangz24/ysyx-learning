@@ -22,6 +22,32 @@
 #define Mr vaddr_read
 #define Mw vaddr_write
 
+/* 执行ecall指令时, 先将当前pc保存到mepc, 在mcause寄存器设置异常号, 
+ * 对ecall来说,M模式下的环境调用异常号为0xb. 最后从mtvec中取出异常入口地址,并跳转到异常入口地址 
+ */
+#define ECALL { \
+  word_t no = 0xb; \
+  s->dnpc = (isa_raise_intr(no, s->pc)); \
+  IFDEF(CONFIG_ETRACE, printf("Enter exception at PC = " FMT_PADDR "\n", s->pc)); \
+}
+
+#define MRET { \
+  s->dnpc = cpu.mepc; \
+  IFDEF(CONFIG_ETRACE, printf("Return from exception at PC = " FMT_PADDR "\n", s->dnpc)); \
+  }
+
+#define CSR(i) *csr_register(i)
+static vaddr_t *csr_register(word_t imm) {
+  switch (imm)
+  {
+  case 0x341: return &(cpu.mepc); break;  // 通过查阅RV特权级手册table2.5
+  case 0x342: return &(cpu.mcause); break;
+  case 0x300: return &(cpu.mstatus); break;
+  case 0x305: return &(cpu.mtvec); break;
+  default: panic("Unknown CSR !!!"); break;
+  }
+}
+
 enum {
   TYPE_I, TYPE_U, TYPE_S,
   TYPE_N, TYPE_J, TYPE_R,
@@ -37,7 +63,6 @@ enum {
 #define immS() do { *imm = (SEXT(BITS(i, 31, 25), 7) << 5) | BITS(i, 11, 7); } while(0)
 #define immJ() do { *imm = SEXT((BITS(i, 31, 31) << 20) | (BITS(i, 30, 21) << 1) | (BITS(i, 20, 20) << 11) | (BITS(i, 19, 12) << 12), 21);} while(0)
 #define immB() do { *imm = SEXT((BITS(i, 31, 31) << 12) | (BITS(i, 30, 25) << 5) | (BITS(i, 11, 8) << 1) | (BITS(i, 7, 7) << 11), 13);} while (0);
-
 
 
 /* 配合上面的宏定义可以获取当前指令的
@@ -123,6 +148,11 @@ static int decode_exec(Decode *s) {
   INSTPAT("0000001 ????? ????? 000 ????? 01100 11", mul    , R, R(rd) = src1 * src2);
   INSTPAT("0000001 ????? ????? 001 ????? 01100 11", mulh   , R, R(rd) = (sword_t)(((SEXT(src1, 32) * SEXT(src2, 32)) >> 32)));
   INSTPAT("0000001 ????? ????? 011 ????? 01100 11", mulhu  , R, R(rd) = (word_t)(((uint64_t)src1 * (uint64_t)src2) >> 32));
+  // 异常处理
+  INSTPAT("0000000 00000 00000 000 00000 11100 11", ecall  , I, ECALL);
+  INSTPAT("??????? ????? ????? 001 ????? 11100 11", csrrw  , I, R(rd) = CSR(imm); CSR(imm) = src1);
+  INSTPAT("??????? ????? ????? 010 ????? 11100 11", csrrs  , I, R(rd) = CSR(imm); CSR(imm) |= src1);
+  INSTPAT("0011000 00010 00000 000 00000 11100 11", mret   , R, MRET);
   // RV32I的系统控制指令
   INSTPAT("0000000 00001 00000 000 00000 11100 11", ebreak , N, NEMUTRAP(s->pc, R(10))); // R(10) is $a0
   INSTPAT("??????? ????? ????? ??? ????? ????? ??", inv    , N, INV(s->pc));

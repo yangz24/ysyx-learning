@@ -175,6 +175,16 @@ config DTRACE_COND
   string "Only trace device read/write when the condition is true"
   default "true"
 
+config ETRACE
+  depends on TRACE && TARGET_NATIVE_ELF && ENGINE_INTERPRETER
+  bool "Enable exception tracer"
+  default n
+
+  config ETRACE_COND
+  depends on ETRACE
+  string "Only trace exception when the condition is true"
+  default "true"
+
 config DIFFTEST
   depends on TARGET_NATIVE_ELF
   bool "Enable differential testing"

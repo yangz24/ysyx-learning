@@ -32,6 +32,9 @@ static void restart() {
 
   /* The zero register is always 0. */
   cpu.gpr[0] = 0;
+
+  /* 为支持difftest, 将mstatus寄存器初始化为0x1800 */
+  cpu.mstatus = 0x1800;
 }
 
 /* 将启动文件导入内存*/
