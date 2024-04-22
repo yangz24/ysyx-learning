@@ -6,7 +6,7 @@
 
 #if !defined(__ISA_NATIVE__) || defined(__NATIVE_USE_KLIB__)
 
-#define BUFSIZE 2048
+#define BUFSIZE 1024
 
 #define MAKE_BUF \
   int ph_width = fmt_width - arg_width; \
