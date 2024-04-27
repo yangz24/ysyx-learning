@@ -12,7 +12,7 @@ module RegisterFile (
   output wire [`DATA_WIDTH-1:0] busB
 );
 
-// **表示乘方操作
+// **表示乘方操作, 这里是通用寄存器堆
 reg [`DATA_WIDTH-1:0] rf [2**`ADDR_WIDTH-1:0];
 
 // 寄存器x0恒为0

@@ -1,7 +1,7 @@
 #include "include/sim.h"
 
 extern VerilatedContext* contextp;
-extern VerilatedVcdC* tfp;
+extern VerilatedFstC* tfp;
 extern VCPU* CPU;
 
 

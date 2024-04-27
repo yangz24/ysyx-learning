@@ -44,6 +44,15 @@ bool difftest_checkregs(CPU_state *ref_r, vaddr_t pc) {
   return true;
 }
 
+static bool is_skip_ref = false;
+int hold_cycle = 2;
+
+// this is used to let ref skip instructions which
+// can not produce consistent behavior with npc
+void difftest_skip_ref() {
+  is_skip_ref = true;
+}
+
 /* 初始化difftest */
 void init_difftest(char *ref_so_file, long img_size, int port) {
   assert(ref_so_file != NULL);
@@ -86,6 +95,21 @@ static void checkregs(CPU_state *ref, vaddr_t pc) {
 void difftest_step(vaddr_t pc) {
   CPU_state ref_r;
 
+  /* 如果调用了difftest_skip_ref()函数, 会将is_skip_ref置1, 从而跳过此次difftest, 只将dut的寄存器状态拷贝到ref中 */
+  if (is_skip_ref) {
+    hold_cycle--;
+    // to skip the checking of an instruction, just copy the reg state to reference design
+    if (hold_cycle == 0)
+    {
+      ref_difftest_regcpy(&cpu, DIFFTEST_TO_REF);
+      is_skip_ref = false;
+      // printf("difftest skipped at PC = " FMT_PADDR "\n", PC);
+      // printf("nextpc= " FMT_PADDR "\n", cpu.pc);
+      hold_cycle = 2;
+      return;
+    }
+  }
+    // printf("difftest at PC = " FMT_PADDR "\n", PC);
   ref_difftest_exec(1);
   ref_difftest_regcpy(&ref_r, DIFFTEST_TO_DUT);
 

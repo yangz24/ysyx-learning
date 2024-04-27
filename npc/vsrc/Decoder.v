@@ -452,9 +452,31 @@ always @(*) begin
             ALUBsrc = 2'b01;
             ALUctr = 4'b0000;
         end
-        default: begin
+        9'b11100_001_z: begin // csrrw
             ExtOp = 3'b000;
             RegWr = 1'b1;
+            Branch = 3'b000;
+            MemtoReg = 1'b0;
+            MemWr = 1'b0;
+            MemOp = 3'b111;
+            ALUAsrc = 1'b0; 
+            ALUBsrc = 2'b00; 
+            ALUctr = 4'b0000; 
+        end
+        9'b11100_010_z: begin // csrrs
+            ExtOp = 3'b000;
+            RegWr = 1'b1;
+            Branch = 3'b000;
+            MemtoReg = 1'b0;
+            MemWr = 1'b0;
+            MemOp = 3'b111;
+            ALUAsrc = 1'b0; 
+            ALUBsrc = 2'b00; 
+            ALUctr = 4'b0000; 
+        end
+        default: begin
+            ExtOp = 3'b000;
+            RegWr = 1'b0;
             Branch = 3'b000;
             MemtoReg = 1'b0;
             MemWr = 1'b0;

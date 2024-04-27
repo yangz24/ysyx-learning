@@ -17,6 +17,7 @@ static void exec_once() {
     single_cycle();
     /* itrace */
     #ifdef CONFIG_ITRACE
+      #ifdef CONFIG_DIFFTEST
       if (DIFFEN)
       {
         trace_inst(PC, Instr);
@@ -25,6 +26,7 @@ static void exec_once() {
           printf("取到指令: pc = " FMT_PADDR  "  Instr = " FMT_WORD "\n", PC, Instr);
         }
       }
+      #endif
     #endif
     
     #ifdef CONFIG_DIFFTEST
@@ -37,6 +39,7 @@ static void exec_once() {
         }
       }
     #endif
+
 }
 
 static void execute(uint64_t n) {

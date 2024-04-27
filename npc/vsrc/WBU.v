@@ -10,6 +10,15 @@ module WBU (
     input wire [`ADDR_WIDTH-1:0] WBReg_Regrd, // 写回寄存器地址
     input wire [`DATA_WIDTH-1:0] WBReg_ALUout,
     input wire [`DATA_WIDTH-1:0] WBReg_DataOut,
+    input wire [`DATA_WIDTH-1:0] WBReg_CSRout,
+    input wire WBReg_CSRRegvalid,
+    input wire WBReg_CSRRegWr,
+    input wire WBReg_CSRset,
+    input wire WBReg_ecall,
+    input wire [63:0] WBReg_ecall_package,
+    // input wire WBReg_mret,
+    input wire [11:0] WBReg_csr,
+    input wire [`DATA_WIDTH-1:0] WBReg_ALUa,
     // PC input
     input wire [`DATA_WIDTH-1:0] WBReg_PC,
     // Instr input
@@ -21,7 +30,13 @@ module WBU (
     output reg HoldOnRegWr, // 写回寄存器使能
     output reg [`ADDR_WIDTH-1:0] Rw, // 写回寄存器地址
     // data output
-    output reg [`DATA_WIDTH-1:0] busW, // 协会寄存器数据
+    output reg [`DATA_WIDTH-1:0] busW, // 写回寄存器数据
+    output reg [`DATA_WIDTH-1:0] CSRin, // CSR寄存器写回数据
+    output reg CSRWren,
+    output reg ecallen,
+    output reg [63:0] ecall_packageen,
+    // output reg mreten,
+    output reg [11:0] Reg_csren,
     // PC output
     output reg [`DATA_WIDTH-1:0] HoldPC,
     // Instr output
@@ -39,7 +54,15 @@ assign Rw = WBReg_Regrd;
 assign HoldOnRegWr = WBReg_RegWr;
 
 // 寄存器写回来源选择模块
-assign busW = WBReg_MemtoReg? WBReg_DataOut : WBReg_ALUout;
+assign busW = WBReg_MemtoReg? WBReg_DataOut : 
+              WBReg_CSRRegvalid? WBReg_CSRout  : WBReg_ALUout;
+
+assign CSRin = WBReg_CSRset? WBReg_CSRout | WBReg_ALUa  : WBReg_ALUa;
+assign CSRWren = WBReg_CSRRegWr;
+assign ecallen = WBReg_ecall;
+assign ecall_packageen = WBReg_ecall_package;
+// assign mreten = WBReg_mret;
+assign Reg_csren = WBReg_csr;
 
 always @(posedge clk ) begin
     if (rst) begin

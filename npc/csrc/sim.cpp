@@ -1,7 +1,7 @@
 #include "include/sim.h"
 
 VerilatedContext* contextp;
-VerilatedVcdC* tfp;
+VerilatedFstC* tfp;
 VCPU* CPU;
 
 /* 函数声明 */
@@ -14,11 +14,11 @@ void reset(int n);
 /* 仿真初始化 */
 void sim_init(){
 	contextp = new VerilatedContext;
-	tfp = new VerilatedVcdC;
+	tfp = new VerilatedFstC;
 	CPU = new VCPU; 
 	contextp->traceEverOn(true);
 	CPU->trace(tfp,0);
-	tfp->open("./build/obj_dir/waveform.vcd");
+	tfp->open("./build/obj_dir/waveform.fst");
 }
 /* 波形抓取 */
 void step_and_dump_wave(){

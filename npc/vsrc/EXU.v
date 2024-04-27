@@ -22,6 +22,14 @@ module EXU (
     input wire [`DATA_WIDTH-1:0] EXReg_busB,
     input wire [`ADDR_WIDTH-1:0] EXReg_Regrd, // 写寄存器地址
     input wire [`DATA_WIDTH-1:0] EXReg_Imm,
+    input wire [`DATA_WIDTH-1:0] EXReg_CSRout,
+    input wire EXReg_CSRRegvalid,
+    input wire EXReg_CSRRegWr,
+    input wire EXReg_CSRset,
+    input wire EXReg_ecall,
+    input wire [63:0] EXReg_ecall_package,
+    input wire EXReg_mret,
+    input wire [11:0] EXReg_csr,
     // PC input
     input wire [`DATA_WIDTH-1:0] EXReg_PC,
     // Instr input
@@ -38,6 +46,15 @@ module EXU (
     output reg [`DATA_WIDTH-1:0] WBReg_ALUout,
     output reg [`DATA_WIDTH-1:0] WBReg_DataOut,
     output reg [`DATA_WIDTH-1:0] BranchPC,
+    output reg [`DATA_WIDTH-1:0] WBReg_CSRout,
+    output reg WBReg_CSRRegvalid,
+    output reg WBReg_CSRRegWr,
+    output reg WBReg_CSRset,
+    output reg WBReg_ecall,
+    output reg [63:0] WBReg_ecall_package,
+    // output reg WBReg_mret,
+    output reg [11:0] WBReg_csr,
+    output reg [`DATA_WIDTH-1:0] WBReg_ALUa,
     // PC output
     output reg [`DATA_WIDTH-1:0] WBReg_PC,
     // Instr output
@@ -103,7 +120,7 @@ MemCtrl u_MemCtrl(
 
 assign PCA = PCAsrc ? EXReg_Imm : 32'd4;
 assign PCB = PCBsrc ? newbusA : EXReg_PC;
-assign BranchPC = PCA + PCB;
+assign BranchPC = (EXReg_ecall | EXReg_mret)? EXReg_CSRout : (PCA + PCB); // 若为ecall指令,则无条件跳转到mtvec存放的异常入口
 
 
 always @(posedge clk ) begin
@@ -117,6 +134,15 @@ always @(posedge clk ) begin
     WBReg_Instr <= 0;
     ex_diffen <= 0;
     WBReg_PCsrc <= 0;
+    WBReg_CSRout <= 0;
+    WBReg_CSRRegvalid <= 0;
+    WBReg_CSRRegWr <= 0;
+    WBReg_CSRset <= 0;
+    WBReg_ecall <= 0;
+    WBReg_ecall_package <= 0;
+    // WBReg_mret <= 0;
+    WBReg_csr <= 0;
+    WBReg_ALUa <= 0;
   end
   else if (enalbe) begin
     WBReg_RegWr <= EXReg_RegWr;
@@ -128,6 +154,15 @@ always @(posedge clk ) begin
     WBReg_Instr <= EXReg_Instr;
     ex_diffen <= id_diffen;
     WBReg_PCsrc <= PCsrc;
+    WBReg_CSRout <= EXReg_CSRout;
+    WBReg_CSRRegvalid <= EXReg_CSRRegvalid;
+    WBReg_CSRRegWr <= EXReg_CSRRegWr;
+    WBReg_CSRset <= EXReg_CSRset;
+    WBReg_ecall <= EXReg_ecall;
+    WBReg_ecall_package <= EXReg_ecall_package;
+    // WBReg_mret <= EXReg_mret;
+    WBReg_csr <= EXReg_csr;
+    WBReg_ALUa <= ALUa;
   end
 
 end

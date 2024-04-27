@@ -31,13 +31,16 @@ Context* __am_irq_handle(Context *c) {
   return c;
 }
 
+// 异常处理入口
 extern void __am_asm_trap(void);
 
 bool cte_init(Context*(*handler)(Event, Context*)) {
   // initialize exception entry
+  // 将异常入口地址设置到mtvec寄存器中
   asm volatile("csrw mtvec, %0" : : "r"(__am_asm_trap));
 
   // register event handler
+  // 注册一个事件处理回调函数
   user_handler = handler;
 
   return true;
@@ -53,7 +56,7 @@ Context *kcontext(Area kstack, void (*entry)(void *), void *arg) {
   // 设置mstatus=0x1800,使得difftest正常工作
   context->mstatus = 0x1800;
 
-  // 设置参数, 使用a0-a7传递参数
+  // 设置参数, 使用a0寄存器传递参数
   context->GPR2 = (uintptr_t)arg;
 
   // 返回上下文结构体指针

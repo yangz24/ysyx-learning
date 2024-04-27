@@ -6,7 +6,7 @@ module BranchCond (
     input wire Zero,
     output reg PCAsrc,
     output reg PCBsrc,
-    output reg PCsrc
+    output reg PCsrc // 判断是否跳转
 );
 
 always @(*) begin

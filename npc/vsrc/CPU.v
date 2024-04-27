@@ -21,6 +21,7 @@ wire                   [   4:0]         IDReg_rs2                  ;
 wire                   [   4:0]         IDReg_Regrd                ;
 wire                   [   2:0]         IDReg_Func3                ;
 wire                   [   6:0]         IDReg_Func7                ;
+wire [11:0] IDReg_csr;
 wire                                    HoldOnRegWr                ;
 wire                   [`ADDR_WIDTH-1:0]Rw                         ;
 wire                   [`DATA_WIDTH-1:0]busW                       ;
@@ -65,6 +66,32 @@ wire                                    wb_diffen                  ;
 
 wire                                    WBReg_PCsrc, HoldPCsrc     ;
 
+wire                   [  11:0]         IDReg_csr                  ;
+wire                   [`DATA_WIDTH-1:0]CSRin                      ;
+wire                                    CSRWren                    ;
+wire                                    ecallen                    ;
+wire                   [  63:0]         ecall_packageen            ;
+wire                                    mreten                     ;
+wire                   [`DATA_WIDTH-1:0]EXReg_CSRout               ;
+wire                                    EXReg_CSRRegvalid          ;
+wire                                    EXReg_CSRRegWr             ;
+wire                                    EXReg_CSRset               ;
+wire                                    EXReg_ecall                ;
+wire                   [  63:0]         EXReg_ecall_package        ;
+wire                                    EXReg_mret                 ;
+wire [11:0] Reg_csren;
+wire [11:0] EXReg_csr;
+wire [11:0] WBReg_csr ;
+
+wire [`DATA_WIDTH-1:0] WBReg_CSRout       ; 
+wire  WBReg_CSRRegvalid  ; 
+wire  WBReg_CSRRegWr     ; 
+wire  WBReg_CSRset       ; 
+wire  WBReg_ecall        ; 
+wire [63:0] WBReg_ecall_package; 
+wire  WBReg_mret         ; 
+wire [`DATA_WIDTH-1:0] WBReg_ALUa         ; 
+
 
 IFU u_IFU(
     .clk                               (clk                       ),
@@ -82,11 +109,27 @@ IFU u_IFU(
     .IDReg_Func3                       (IDReg_Func3               ),
     .IDReg_Func7                       (IDReg_Func7               ),
     .if_diffen                         (if_diffen                 ),
-    .BPUClearCtr                       (BPUClearCtr               ) 
+    .BPUClearCtr                       (BPUClearCtr               ),
+    .IDReg_csr                         (IDReg_csr                 ) 
 );
 
 
 IDU u_IDU(
+    .Reg_csren          (Reg_csren),
+    .EXReg_csr           (EXReg_csr),
+    .EXReg_CSRRegWr                    (EXReg_CSRRegWr            ),
+    .EXReg_CSRset                      (EXReg_CSRset              ),
+    .EXReg_ecall                       (EXReg_ecall               ),
+    .EXReg_ecall_package               (EXReg_ecall_package       ),
+    .EXReg_mret                        (EXReg_mret                ),
+    .IDReg_csr                         (IDReg_csr                 ),
+    .CSRin                             (CSRin                     ),
+    .CSRWren                           (CSRWren                   ),
+    .ecallen                           (ecallen                   ),
+    .ecall_packageen                   (ecall_packageen           ),
+    // .mreten                            (mreten                    ),
+    .EXReg_CSRout                      (EXReg_CSRout              ),
+    .EXReg_CSRRegvalid                 (EXReg_CSRRegvalid         ),
     .clk                               (clk                       ),
     .rst                               (rst                       ),
     .IDReg_PC                          (IDReg_PC                  ),
@@ -125,6 +168,23 @@ IDU u_IDU(
 
 
 EXU u_EXU(
+    .EXReg_csr              (EXReg_csr),
+    .WBReg_csr              (WBReg_csr),
+    .WBReg_CSRout           (WBReg_CSRout),
+    .WBReg_CSRRegvalid      (WBReg_CSRRegvalid),
+    .WBReg_CSRRegWr         (WBReg_CSRRegWr),
+    .WBReg_CSRset           (WBReg_CSRset),
+    .WBReg_ecall            (WBReg_ecall),
+    .WBReg_ecall_package    (WBReg_ecall_package),
+    // .WBReg_mret             (WBReg_mret),
+    .WBReg_ALUa             (WBReg_ALUa),
+    .EXReg_CSRout                      (EXReg_CSRout              ),
+    .EXReg_CSRRegvalid                 (EXReg_CSRRegvalid         ),
+    .EXReg_CSRRegWr                    (EXReg_CSRRegWr            ),
+    .EXReg_CSRset                      (EXReg_CSRset              ),
+    .EXReg_ecall                       (EXReg_ecall               ),
+    .EXReg_ecall_package               (EXReg_ecall_package       ),
+    .EXReg_mret                        (EXReg_mret                ),
     .clk                               (clk                       ),
     .rst                               (rst                       ),
     .EXReg_ALUAsrc                     (EXReg_ALUAsrc             ),
@@ -160,6 +220,21 @@ EXU u_EXU(
 );
 
 WBU u_WBU(
+    .WBReg_csr                  (WBReg_csr),
+    .Reg_csren              (Reg_csren),
+    .CSRin                             (CSRin                     ),
+    .CSRWren                           (CSRWren                   ),
+    .ecallen                           (ecallen                   ),
+    .ecall_packageen                   (ecall_packageen           ),
+    // .mreten                            (mreten                    ),
+    .WBReg_CSRout                      (WBReg_CSRout              ),
+    .WBReg_CSRRegvalid                 (WBReg_CSRRegvalid         ),
+    .WBReg_CSRRegWr                    (WBReg_CSRRegWr            ),
+    .WBReg_CSRset                      (WBReg_CSRset              ),
+    .WBReg_ecall                       (WBReg_ecall               ),
+    .WBReg_ecall_package               (WBReg_ecall_package       ),
+    // .WBReg_mret                        (WBReg_mret                ),
+    .WBReg_ALUa                        (WBReg_ALUa                ),
     .clk                               (clk                       ),
     .rst                               (rst                       ),
     .WBReg_MemtoReg                    (WBReg_MemtoReg            ),

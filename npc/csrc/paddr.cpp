@@ -11,6 +11,11 @@
 
 extern VCPU* CPU;
 
+
+#ifdef CONFIG_DIFFTEST
+void difftest_skip_ref();
+#endif
+
 uint64_t get_time();
 
 static uint8_t pmem[CONFIG_MSIZE] = {};
@@ -51,7 +56,8 @@ word_t paddr_read(paddr_t addr, int len) {
   if (in_pmem(addr)) {
     // IFDEF(CONFIG_MTRACE, display_pread(addr, len));
     return pmem_read(addr, len);
-  }
+  } 
+
   #ifdef CONFIG_DEVICE
     uint64_t us = get_time();
     word_t real_time;
@@ -76,7 +82,8 @@ void paddr_write(paddr_t addr, int len, word_t data) {
     // IFDEF(CONFIG_MTRACE, display_pwrite(addr, len, data));
     pmem_write(addr, len, data); 
     return; 
-  }
+  } 
+
   #ifdef CONFIG_DEVICE
     if (addr == 0xa00003F8)
     {
@@ -84,6 +91,7 @@ void paddr_write(paddr_t addr, int len, word_t data) {
       {
         putchar(data);
         fflush(stdout);
+        // printf("well done! data=%c\n", data);
       }
     }
     return;
@@ -91,8 +99,15 @@ void paddr_write(paddr_t addr, int len, word_t data) {
   // out_of_bound(addr);
 }
 
+
 /* verilog代码中内存控制模块调用的函数 MemCtrl.v */
 extern "C" int mem_read(paddr_t Addr, int isInstr) {
+  #ifdef CONFIG_DIFFTEST
+    if (in_pmem(Addr) == false)
+    {
+      difftest_skip_ref();
+    }
+  #endif
   word_t data_out = paddr_read(Addr, 4);
   if (isInstr)
   {
@@ -100,11 +115,16 @@ extern "C" int mem_read(paddr_t Addr, int isInstr) {
     return data_out;
   }
   // printf("MemAddr = 0x%08x\n", Addr);
- 
   return data_out;
 }
 
 extern "C" void mem_write(paddr_t Addr, paddr_t DataIn, char Wmask) { 
+  #ifdef CONFIG_DIFFTEST
+    if (in_pmem(Addr) == false)
+    {
+      difftest_skip_ref();
+    }
+  #endif
   for (size_t i = 0; i < 4; i++)
   {
     if (Wmask >> i & 0x1)

@@ -18,6 +18,7 @@ module IFU (
     output reg [`ADDR_WIDTH-1:0]    IDReg_Regrd,
     output reg [`FUNC3_WIDTH-1:0]   IDReg_Func3,
     output reg [`FUNC7_WIDTH-1:0]   IDReg_Func7,
+    output reg [11:0] IDReg_csr,
 
     output reg if_diffen 
 );
@@ -30,6 +31,7 @@ wire [`ADDR_WIDTH-1:0] rs2;
 wire [`ADDR_WIDTH-1:0] rd;
 wire [`FUNC3_WIDTH-1:0] func3;
 wire [`FUNC7_WIDTH-1:0] func7;
+wire [11:0] csr;
 
 wire enable ;
 assign enable = 1; // if_id_write;
@@ -59,7 +61,8 @@ PreDecoder u_PreDecoder(
     .rs2   (rs2   ),
     .rd    (rd    ),
     .func3 (func3 ),
-    .func7 (func7 )
+    .func7 (func7 ),
+    .csr   (csr   )
 );
 
 
@@ -74,6 +77,7 @@ always @(posedge clk ) begin
         IDReg_Regrd <= 0;
         IDReg_Func3 <= 0;
         IDReg_Func7 <= 0;
+        IDReg_csr <= 0;
         if_diffen <= 0;
     end
     else if (enable) begin
@@ -85,6 +89,7 @@ always @(posedge clk ) begin
         IDReg_Regrd <= rd;
         IDReg_Func3 <= func3;
         IDReg_Func7 <= func7;
+        IDReg_csr   <= csr;
         if_diffen <= 1;
     end
     // else if (!enable) begin

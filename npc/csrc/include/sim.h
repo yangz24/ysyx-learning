@@ -9,12 +9,12 @@
 
 // verilator 库
 #include "verilated.h"
-#include "verilated_vcd_c.h"
+#include "verilated_fst_c.h"
 #include "VCPU.h"
 #include "VCPU___024root.h"
 
 extern VerilatedContext* contextp;
-extern VerilatedVcdC* tfp;
+extern VerilatedFstC* tfp;
 extern VCPU* CPU;
 
 
