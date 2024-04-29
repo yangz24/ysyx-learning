@@ -53,6 +53,7 @@ static void init_screen() {
   SDL_SetWindowTitle(window, title);
   texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888,
       SDL_TEXTUREACCESS_STATIC, SCREEN_W, SCREEN_H);
+  SDL_RenderPresent(renderer);
 }
 
 static inline void update_screen() {
@@ -73,16 +74,8 @@ static inline void update_screen() {
 void vga_update_screen() {
   // TODO: call `update_screen()` when the sync register is non-zero,
   // then zero out the sync register
-  uint32_t sync = vgactl_port_base[1];
-  if (sync)
-  {
-    update_screen();
-    vgactl_port_base[1] = 0;
-  }
-  
 }
 
-/* vga的初始化 */
 void init_vga() {
   vgactl_port_base = (uint32_t *)new_space(8);
   vgactl_port_base[0] = (screen_width() << 16) | screen_height();

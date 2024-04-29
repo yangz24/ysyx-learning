@@ -21,7 +21,6 @@
 typedef void(*io_callback_t)(uint32_t, int, bool);
 uint8_t* new_space(int size);
 
-/* 名字, 映射的起始地址和结束地址, 映射的目标空间, 以及一个回调函数*/
 typedef struct {
   const char *name;
   // we treat ioaddr_t as paddr_t here
@@ -31,14 +30,10 @@ typedef struct {
   io_callback_t callback;
 } IOMap;
 
-/* 检查访问的地址是否在映射的目标空间内 */
 static inline bool map_inside(IOMap *map, paddr_t addr) {
   return (addr >= map->low && addr <= map->high);
 }
 
-/* 若访问的地址正好落在某个映射的目标空间内, 则返回注册时的编号
- * 并跳过一轮difftest
- */
 static inline int find_mapid_by_addr(IOMap *maps, int size, paddr_t addr) {
   int i;
   for (i = 0; i < size; i ++) {

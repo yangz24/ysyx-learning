@@ -18,26 +18,8 @@
 #include "../local-include/reg.h"
 
 bool isa_difftest_checkregs(CPU_state *ref_r, vaddr_t pc) {
-  int reg_num = ARRLEN(cpu.gpr);
-  for (size_t i = 0; i < reg_num; i++)
-  {
-    if (ref_r->gpr[i] != gpr(i))
-    {
-      Log("%s is different after executing instruction at pc = " FMT_WORD
-          ", right = " FMT_WORD ", wrong = " FMT_WORD ", diff = " FMT_WORD,
-          regs[i], pc, ref_r->gpr[i], gpr(i), ref_r->gpr[i] ^ gpr(i));
-      return false;
-    }
-  }
-  if (ref_r->pc != cpu.pc)
-  {
-    Log("pc is different after executing instruction at pc = " FMT_WORD
-    ", right = " FMT_WORD ", wrong = " FMT_WORD, pc, ref_r->pc, cpu.pc);
-    return false;
-  }
-  return true;
+  return false;
 }
-
 
 void isa_difftest_attach() {
 }

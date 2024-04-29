@@ -23,7 +23,7 @@
 
 static uint8_t *serial_base = NULL;
 
-/* 每当CPU往数据寄存器中写入数据时, 串口会将数据传送到主机的标准错误流进行输出. */
+
 static void serial_putc(char ch) {
   MUXDEF(CONFIG_TARGET_AM, putch(ch), putc(ch, stderr));
 }
@@ -40,9 +40,6 @@ static void serial_io_handler(uint32_t offset, int len, bool is_write) {
   }
 }
 
-/* 串口初始化时会分别注册0x3F8处长度为8个字节的端口, 
- * 以及0xa00003F8处长度为8字节的MMIO空间, 它们都会映射到串口的数据寄存器.
- */
 void init_serial() {
   serial_base = new_space(8);
 #ifdef CONFIG_HAS_PORT_IO

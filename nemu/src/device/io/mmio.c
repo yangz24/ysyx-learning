@@ -21,13 +21,11 @@
 static IOMap maps[NR_MAP] = {};
 static int nr_map = 0;
 
-/* 根据addr获取设备映射 */
 static IOMap* fetch_mmio_map(paddr_t addr) {
   int mapid = find_mapid_by_addr(maps, nr_map, addr);
   return (mapid == -1 ? NULL : &maps[mapid]);
 }
 
-/* 打印内存重叠信息的函数 */
 static void report_mmio_overlap(const char *name1, paddr_t l1, paddr_t r1,
     const char *name2, paddr_t l2, paddr_t r2) {
   panic("MMIO region %s@[" FMT_PADDR ", " FMT_PADDR "] is overlapped "
@@ -35,13 +33,6 @@ static void report_mmio_overlap(const char *name1, paddr_t l1, paddr_t r1,
 }
 
 /* device interface */
-/* 为设备的初始化注册一个内存映射I/O的映射关系. 
- * 先检查设备注册数量是否超出容量
- * 再检查注册的地址是否落在客户程序物理内存pmem上, 若是则报内存重叠
- * 再检查注册的地址是否落在已注册的秘密哦MMIO设备目标空间上,若是则报内存重叠
- * 检查通过,注册MMIO设备
- * 打印注册好的设备信息,设备ID+1
-*/
 void add_mmio_map(const char *name, paddr_t addr, void *space, uint32_t len, io_callback_t callback) {
   assert(nr_map < NR_MAP);
   paddr_t left = addr, right = addr + len - 1;
@@ -63,7 +54,6 @@ void add_mmio_map(const char *name, paddr_t addr, void *space, uint32_t len, io_
 }
 
 /* bus interface */
-/* MMIO设备访问接口 */
 word_t mmio_read(paddr_t addr, int len) {
   return map_read(addr, len, fetch_mmio_map(addr));
 }

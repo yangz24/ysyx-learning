@@ -33,11 +33,6 @@ void init_alarm();
 void send_key(uint8_t, bool);
 void vga_update_screen();
 
-/* 
- * cpu_exec()在执行每条指令之后就会调用device_update()函数, 这个函数首先会检查距离上次设备更新是否已经超过一定时间, 
- * 若是, 则会尝试刷新屏幕, 并进一步检查是否有按键按下/释放, 以及是否点击了窗口的X按钮; 
- * 否则则直接返回, 避免检查过于频繁, 因为上述事件发生的频率是很低的.
-*/
 void device_update() {
   static uint64_t last = 0;
   uint64_t now = get_time();

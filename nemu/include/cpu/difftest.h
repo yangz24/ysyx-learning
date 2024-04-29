@@ -18,7 +18,6 @@
 
 #include <common.h>
 #include <difftest-def.h>
-#include <isa.h>
 
 #ifdef CONFIG_DIFFTEST
 void difftest_skip_ref();
@@ -50,7 +49,5 @@ static inline bool difftest_check_reg(const char *name, vaddr_t pc, word_t ref, 
   }
   return true;
 }
-
-bool isa_difftest_checkregs(CPU_state *ref_r, vaddr_t pc) ;
 
 #endif

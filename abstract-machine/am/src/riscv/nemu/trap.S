@@ -31,23 +31,24 @@ f(30) f(31)
 #define PUSH(n) STORE concat(x, n), (n * XLEN)(sp);
 #define POP(n)  LOAD  concat(x, n), (n * XLEN)(sp);
 
-#define CONTEXT_SIZE  ((NR_REGS + 3) * XLEN)
+#define CONTEXT_SIZE  ((NR_REGS + 3) * XLEN) // 定义了要在堆栈上保存的上下文的大小
 #define OFFSET_SP     ( 2 * XLEN)
 #define OFFSET_CAUSE  ((NR_REGS + 0) * XLEN)
 #define OFFSET_STATUS ((NR_REGS + 1) * XLEN)
 #define OFFSET_EPC    ((NR_REGS + 2) * XLEN)
 
-.align 3
-.globl __am_asm_trap
-__am_asm_trap:
-  addi sp, sp, -CONTEXT_SIZE
+.align 3 // 将后续代码对齐到 8 字节边界
+.globl __am_asm_trap 
+__am_asm_trap: 
+  addi sp, sp, -CONTEXT_SIZE // 减去 CONTEXT_SIZE 字节, 得到新的栈顶 sp, 为保存上下文分配空间
 
-  MAP(REGS, PUSH)
+  MAP(REGS, PUSH) // 将寄存器压栈
 
+  // 使用 csrr 指令读取控制和状态寄存器 (mcause、mstatus、mepc) 的值
   csrr t0, mcause
   csrr t1, mstatus
   csrr t2, mepc
-
+  // 将这些值保存到堆栈上
   STORE t0, OFFSET_CAUSE(sp)
   STORE t1, OFFSET_STATUS(sp)
   STORE t2, OFFSET_EPC(sp)
@@ -59,6 +60,8 @@ __am_asm_trap:
 
   mv a0, sp
   jal __am_irq_handle
+
+  mv sp, a0 // 先不恢复上下文的内容,而是通过该指令切换到新的进程的栈顶sp,指向新的栈顶, 那么后续恢复的上下文就是另一个进程的上下文了
 
   LOAD t1, OFFSET_STATUS(sp)
   LOAD t2, OFFSET_EPC(sp)

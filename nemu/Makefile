@@ -22,7 +22,6 @@ endif
 -include $(NEMU_HOME)/include/config/auto.conf
 -include $(NEMU_HOME)/include/config/auto.conf.cmd
 
-# 除去字符串中的引号
 remove_quote = $(patsubst "%",%,$(1))
 
 # Extract variabls from menuconfig
