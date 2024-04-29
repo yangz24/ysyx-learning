@@ -52,11 +52,8 @@ __am_asm_trap:
   STORE t1, OFFSET_STATUS(sp)
   STORE t2, OFFSET_EPC(sp)
 
-
   mv a0, sp
   jal __am_irq_handle
-
-  mv sp, a0 // 先不恢复上下文的内容,而是通过该指令恢复sp,重新指向栈顶
 
   LOAD t1, OFFSET_STATUS(sp)
   LOAD t2, OFFSET_EPC(sp)
