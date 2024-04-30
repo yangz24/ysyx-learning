@@ -13,30 +13,11 @@
 * See the Mulan PSL v2 for more details.
 ***************************************************************************************/
 
-#include <isa.h>
-#include <memory/paddr.h>
+#include <common.h>
+#ifndef CONFIG_TARGET_AM
+#include <time.h>
+#endif
 
-// this is not consistent with uint8_t
-// but it is ok since we do not access the array directly
-static const uint32_t img [] = {
-  0x3c048000,  // lui a0, 0x8000
-  0xac800000,  // sw  zero, 0(a0)
-  0x8c820000,  // lw  v0,0(a0)
-  0x7000003f,  // sdbbp (used as nemu_trap)
-};
-
-static void restart() {
-  /* Set the initial program counter. */
-  cpu.pc = RESET_VECTOR;
-
-  /* The zero register is always 0. */
-  cpu.gpr[0] = 0;
-}
-
-void init_isa() {
-  /* Load built-in image. */
-  memcpy(guest_to_host(RESET_VECTOR), img, sizeof(img));
-
-  /* Initialize this virtual computer system. */
-  restart();
+void init_rand() {
+  srand(MUXDEF(CONFIG_TARGET_AM, 0, time(0)));
 }

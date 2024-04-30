@@ -91,7 +91,17 @@ extern "C" void init_disasm(const char *triple) {
   if (isa == "riscv32" || isa == "riscv64")
     gIP->applyTargetSpecificCLOption("no-aliases");
 }
-
+/**
+ * @brief disassemble函数用于LLVM库交互，是实现反汇编功能的接口函数。其可以将二进制指令串转化为汇编指令字符串。
+ * 该函数用于进行反汇编操作，根据传入的指令码 code 和字节数 nbyte，在地址 pc 处获取指令信息。
+ * 最终将输出的反汇编结果存储在给定大小为 size 的字符数组 str 中。
+ * @param str 转化后的汇编指令存储区
+ * @param size 存储区大小
+ * @param pc 从地址pc处获取指令信息
+ * @param code 传入的指令码
+ * @param nbyte 传入的字节数
+ * @return 无返回值
+*/
 extern "C" void disassemble(char *str, int size, uint64_t pc, uint8_t *code, int nbyte) {
   MCInst inst;
   llvm::ArrayRef<uint8_t> arr(code, nbyte);

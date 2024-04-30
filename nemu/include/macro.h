@@ -23,12 +23,15 @@
 #define str(x) str_temp(x)
 
 // strlen() for string constant
+/* 计算字符串常量长度 */
 #define STRLEN(CONST_STR) (sizeof(CONST_STR) - 1)
 
 // calculate the length of an array
+/* 计算数组大小 */
 #define ARRLEN(arr) (int)(sizeof(arr) / sizeof(arr[0]))
 
 // macro concatenation
+/* 字符串拼接，拼接結果为xy */
 #define concat_temp(x, y) x ## y
 #define concat(x, y) concat_temp(x, y)
 #define concat3(x, y, z) concat(concat(x, y), z)
@@ -46,6 +49,7 @@
 #define __P_ONE_1  X,
 #define __P_ZERO_0 X,
 // define some selection functions based on the properties of BOOLEAN macro
+/* 多路选择器，若macro=1,则返回X, 否则返回Y */
 #define MUXDEF(macro, X, Y)  MUX_MACRO_PROPERTY(__P_DEF_, macro, X, Y)
 #define MUXNDEF(macro, X, Y) MUX_MACRO_PROPERTY(__P_DEF_, macro, Y, X)
 #define MUXONE(macro, X, Y)  MUX_MACRO_PROPERTY(__P_ONE_, macro, X, Y)
@@ -84,7 +88,13 @@
 #define MAP(c, f) c(f)
 
 #define BITMASK(bits) ((1ull << (bits)) - 1)
+/* 位获取，类似于verilog中x[hi:lo] */
 #define BITS(x, hi, lo) (((x) >> (lo)) & BITMASK((hi) - (lo) + 1)) // similar to x[hi:lo] in verilog
+/* 这个宏用于进行符号扩展操作。它创建一个结构体，将输入x的值存储在长度为len的有符号整数字段中，并返回该值的无符号表示。
+ * 这样可以实现将有符号整数符号扩展为更长的无符号整数。
+ * @param x 为需要进行符号扩展的数
+ * @param len, 为该数的长度
+ */
 #define SEXT(x, len) ({ struct { int64_t n : len; } __x = { .n = x }; (uint64_t)__x.n; })
 
 #define ROUNDUP(a, sz)   ((((uintptr_t)a) + (sz) - 1) & ~((sz) - 1))

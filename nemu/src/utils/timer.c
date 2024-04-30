@@ -44,6 +44,3 @@ uint64_t get_time() {
   return now - boot_time;
 }
 
-void init_rand() {
-  srand(get_time_internal());
-}

@@ -18,6 +18,12 @@
 
 #include <isa.h>
 
+/* 存放在执行一条指令时所需的信息
+ * pc当前PC值，
+ * snpc默认下一个pc值，即PC+4，
+ * dnpc跳转指令指出的pc值，
+ * isa.inst.val保存取出的指令
+*/
 typedef struct Decode {
   vaddr_t pc;
   vaddr_t snpc; // static next pc
