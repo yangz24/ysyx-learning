@@ -1,4 +1,5 @@
-`include "define.v"
+`include "define.vh"
+`include "define_pipelineregs.vh"
 
 module IF_ID_REG (
     input wire clk,
