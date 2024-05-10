@@ -1,10 +1,10 @@
-`include "define.v"
+`include "define.vh"
 
 module InstrMemCtrl (
     input wire clk,
     input wire rst,
-    input wire [`DATA_WIDTH-1:0] RdAddr,
-    output reg [`DATA_WIDTH-1:0] Instr
+    input wire [`PC_WIDTH-1:0] RdAddr,
+    output reg [`INSTR_WIDTH-1:0] Instr
 );
 
 
@@ -17,7 +17,6 @@ always @(*) begin
     else begin
         // $display("RdAddr = %x\n", RdAddr);
         Instr = mem_read(RdAddr, 1);
-        
     end
 end
     

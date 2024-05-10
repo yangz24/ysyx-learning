@@ -1,33 +1,38 @@
-`include "define.v"
+`include "define.vh"
 
 module RegisterFile (
-  input  wire                  Wrclk,
-  input  wire [`ADDR_WIDTH-1:0] Ra,  // a读地址
-  input  wire [`ADDR_WIDTH-1:0] Rb,  // b读地址
-  input  wire [`ADDR_WIDTH-1:0] Rw,  // rd写地址
-  input  wire [`DATA_WIDTH-1:0] busW, // rd写数据
-  input  wire                  RegWr, // 写使能
-//   寄存器输出
-  output wire [`DATA_WIDTH-1:0] busA,  
-  output wire [`DATA_WIDTH-1:0] busB
+    input  wire                         clk                        ,
+    input  wire                         rst                        ,
+    // reg read
+    input  wire        [`REG_ADDR_WIDTH-1:0]raddr1                     ,
+    input  wire        [`REG_ADDR_WIDTH-1:0]raddr2                     ,
+    // reg write
+    input  wire        [`REG_ADDR_WIDTH-1:0]waddr                      ,
+    input  wire        [`DATA_WIDTH-1:0]wdata                      ,
+    input  wire                         wen                        ,
+    //   寄存器输出
+    output wire        [`DATA_WIDTH-1:0]rdata1                       ,
+    output wire        [`DATA_WIDTH-1:0]rdata2                        
 );
 
-// **表示乘方操作, 这里是通用寄存器堆
-reg [`DATA_WIDTH-1:0] rf [2**`ADDR_WIDTH-1:0];
 
-// 寄存器x0恒为0
-always @(posedge Wrclk) begin
+/******************************************** Register File ********************************************/
+reg [`DATA_WIDTH-1:0] rf [2**`REG_ADDR_WIDTH-1:0];
+
+/******************************************** reg read ********************************************/
+
+// reg0 always 0
+always @(posedge clk) begin
     rf[0] <= 32'd0;
 end
 
-// 寄存器读操作
-assign busA = (Ra == Rw && Ra != 0 && RegWr)?  busW: rf[Ra];
-assign busB = (Rb == Rw && Rb != 0 && RegWr)?  busW: rf[Rb];
+assign rdata1 = (raddr1 == waddr && waddr != 0 && wen)?  wdata: rf[raddr1];
+assign rdata2 = (raddr2 == waddr && waddr != 0 && wen)?  wdata: rf[raddr2];
 
-// 寄存器写操作
-always @(posedge Wrclk) begin
-    if (RegWr && Rw != 0) begin
-      rf[Rw] <= busW;
+/******************************************** reg write ********************************************/
+always @(posedge clk) begin
+    if (wen && waddr != 0) begin
+      rf[waddr] <= wdata;
     end
   end
 

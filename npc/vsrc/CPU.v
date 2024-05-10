@@ -1,299 +1,287 @@
-`include "define.v"
+`include "define.vh"
+`include "define_pipelineregs.vh"
 
 module CPU (
-    input  wire                         clk                        ,
-    input  wire                         rst                        ,
-    output wire                         diffen                     ,
-    output wire        [`DATA_WIDTH-1:0]diffPC                     ,
-    output wire        [`DATA_WIDTH-1:0]diffInstr                  ,
-    output wire        [`DATA_WIDTH-1:0]nextPC                      
+    input wire clk,
+    input wire rst
+
 );
 
-wire                                    PCsrc                      ;
-wire                   [`DATA_WIDTH-1:0]BranchPC                   ;
-wire                   [`DATA_WIDTH-1:0]IDReg_PC                   ;
-wire                   [`DATA_WIDTH-1:0]IDReg_Instr                ;
-wire                                    PCwrite                    ;
-wire                                    if_id_write                ;
-wire                   [   6:0]         IDReg_op                   ;
-wire                   [   4:0]         IDReg_rs1                  ;
-wire                   [   4:0]         IDReg_rs2                  ;
-wire                   [   4:0]         IDReg_Regrd                ;
-wire                   [   2:0]         IDReg_Func3                ;
-wire                   [   6:0]         IDReg_Func7                ;
-wire [11:0] IDReg_csr;
-wire                                    HoldOnRegWr                ;
-wire                   [`ADDR_WIDTH-1:0]Rw                         ;
-wire                   [`DATA_WIDTH-1:0]busW                       ;
-wire                                    ForwardingA                ;
-wire                                    ForwardingB                ;
-wire                                    ClearCtr                   ;
-wire                                    EXReg_MemRd                ;
-wire                   [`ADDR_WIDTH-1:0]EXReg_Regrs1               ;
-wire                   [`ADDR_WIDTH-1:0]EXReg_Regrs2               ;
-wire                                    EXReg_ALUAsrc              ;
-wire                   [   1:0]         EXReg_ALUBsrc              ;
-wire                   [   3:0]         EXReg_ALUctr               ;
-wire                   [   2:0]         EXReg_Branch               ;
-wire                                    EXReg_RegWr                ;
-wire                                    EXReg_MemtoReg             ;
-wire                                    EXReg_MemWr                ;
-wire                   [   2:0]         EXReg_MemOp                ;
-wire                   [`DATA_WIDTH-1:0]EXReg_busA                 ;
-wire                   [`DATA_WIDTH-1:0]EXReg_busB                 ;
-wire                   [`ADDR_WIDTH-1:0]EXReg_Regrd                ;
-wire                   [`DATA_WIDTH-1:0]EXReg_Imm                  ;
-wire                   [`DATA_WIDTH-1:0]EXReg_PC                   ;
-wire                   [`DATA_WIDTH-1:0]EXReg_Instr                ;
-wire                                    WBReg_RegWr                ;
-wire                                    WBReg_MemtoReg             ;
-wire                   [`ADDR_WIDTH-1:0]WBReg_Regrd                ;
-wire                   [`DATA_WIDTH-1:0]WBReg_ALUout               ;
-wire                   [`DATA_WIDTH-1:0]WBReg_DataOut              ;
-wire                   [`DATA_WIDTH-1:0]BranchPC                   ;
-wire                   [`DATA_WIDTH-1:0]WBReg_PC                   ;
-wire                   [`DATA_WIDTH-1:0]WBReg_Instr                ;
+/******************************************** IFU output ********************************************/
+wire [`PC_WIDTH-1:0] if_id_PC;
+wire [`INSTR_WIDTH-1:0] if_id_Instr;
+wire [`PC_WIDTH-1:0] if_id_PC_4;
 
-wire                                    BPUClearCtr                ;
+/******************************************** IF_ID_REG output **********/
+type_if_id_reg if_id_reg;
 
-wire                   [`DATA_WIDTH-1:0]HoldPC                     ;
-wire                   [`DATA_WIDTH-1:0]HoldInstr                  ;
+/******************************************** IDU output ********************************************/
+wire [`PC_WIDTH-1:0] id_exe_PC;
+wire [`INSTR_WIDTH-1:0] id_exe_Instr;
+wire [`PC_WIDTH-1:0] id_exe_PC_4;
+wire  id_exe_reg_wen    ; 
+wire [`REG_WRITE_BACK_SEL_LENGTH-1:0] id_exe_reg_wb_sel ; 
+wire  id_exe_aluasrc    ; 
+wire  id_exe_alubsrc    ; 
+wire [`ALU_CTRL_LENGTH-1:0] id_exe_alu_op     ; 
+wire  id_exe_do_branch  ; 
+wire  id_exe_do_jump    ; 
+wire [`BRANCH_COND_LENGTH-1:0] id_exe_branch_cond; 
+wire [`MEM_CTRL_LENGTH-1:0] id_exe_mem_op     ; 
+wire  id_exe_mem_wen    ; 
+wire  id_exe_mem_ren    ; 
+wire [`DATA_WIDTH-1:0] id_exe_Imm        ; 
+wire [`REG_ADDR_WIDTH-1:0] id_exe_raddr1     ; 
+wire [`REG_ADDR_WIDTH-1:0] id_exe_raddr2     ; 
+wire [`REG_ADDR_WIDTH-1:0] id_exe_reg_waddr      ; 
+wire [`DATA_WIDTH-1:0] id_exe_rdata1     ; 
+wire [`DATA_WIDTH-1:0] id_exe_rdata2     ;
 
-wire                                    if_diffen                  ;
-wire                                    id_diffen                  ;
-wire                                    ex_diffen                  ;
-wire                                    wb_diffen                  ;
+/******************************************** ID_EXE_REG output ********************************************/
+type_id_exe_reg id_exe_reg;
 
-wire                                    WBReg_PCsrc, HoldPCsrc     ;
+/******************************************** EXU output **********/
+wire branch_taken;
+wire [`PC_WIDTH-1:0] exe_mem_PC;
+wire [`INSTR_WIDTH-1:0] exe_mem_Instr;
+wire [`PC_WIDTH-1:0] exe_mem_PC_4;
+wire  exe_mem_reg_wen    ; 
+wire [`REG_WRITE_BACK_SEL_LENGTH-1:0] exe_mem_reg_wb_sel ; 
+wire [`MEM_CTRL_LENGTH-1:0] exe_mem_mem_op     ; 
+wire  exe_mem_mem_wen    ; 
+wire  exe_mem_mem_ren    ; 
+wire [`REG_ADDR_WIDTH-1:0] exe_mem_reg_waddr      ; 
+wire [`DATA_WIDTH-1:0] exe_mem_alu_out    ; 
+wire [`DATA_WIDTH-1:0] exe_mem_rs2        ;
 
-wire                   [  11:0]         IDReg_csr                  ;
-wire                   [`DATA_WIDTH-1:0]CSRin                      ;
-wire                                    CSRWren                    ;
-wire                                    ecallen                    ;
-wire                   [  63:0]         ecall_packageen            ;
-wire                                    mreten                     ;
-wire                   [`DATA_WIDTH-1:0]EXReg_CSRout               ;
-wire                                    EXReg_CSRRegvalid          ;
-wire                                    EXReg_CSRRegWr             ;
-wire                                    EXReg_CSRset               ;
-wire                                    EXReg_ecall                ;
-wire                   [  63:0]         EXReg_ecall_package        ;
-wire                                    EXReg_mret                 ;
-wire [11:0] Reg_csren;
-wire [11:0] EXReg_csr;
-wire [11:0] WBReg_csr ;
+/******************************************** EXE_MEM_REG output **********/
+type_exe_mem_reg exe_mem_reg;
 
-wire [`DATA_WIDTH-1:0] WBReg_CSRout       ; 
-wire  WBReg_CSRRegvalid  ; 
-wire  WBReg_CSRRegWr     ; 
-wire  WBReg_CSRset       ; 
-wire  WBReg_ecall        ; 
-wire [63:0] WBReg_ecall_package; 
-wire  WBReg_mret         ; 
-wire [`DATA_WIDTH-1:0] WBReg_ALUa         ; 
+/******************************************** MEMU output **********/
+wire [`PC_WIDTH-1:0] mem_wb_PC;
+wire [`INSTR_WIDTH-1:0] mem_wb_Instr;
+wire [`PC_WIDTH-1:0] mem_wb_PC_4;
+wire  mem_wb_reg_wen    ; 
+wire [`REG_WRITE_BACK_SEL_LENGTH-1:0] mem_wb_reg_wb_sel ;
+wire [`REG_ADDR_WIDTH-1:0] mem_wb_reg_waddr      ; 
+wire [`DATA_WIDTH-1:0] mem_wb_alu_out    ; 
+wire [`DATA_WIDTH-1:0] mem_wb_mem_out    ;
+
+
+/********** MEM_WB_REG output **********/
+type_mem_wb_reg mem_wb_reg;
+
+/********** WBU output **********/
+wire reg_wen;
+wire [`REG_ADDR_WIDTH-1:0] reg_waddr;
+wire [`DATA_WIDTH-1:0] reg_wdata;
+
+/********** Forwarding Unit output **********/
+wire [`FORWARDING_A_LENGTH-1:0] forwardingA;
+wire [`FORWARDING_B_LENGTH-1:0] forwardingB;
+
+/********** Hazard Detection Unit output **********/
+wire PC_enable;
+wire if_id_reg_enable;
+wire hazard_clear_ctr;
+
+/********** BPU output **********/
+wire bpu_clear_ctr;
 
 
 IFU u_IFU(
-    .clk                               (clk                       ),
-    .rst                               (rst                       ),
-  // .PCwrite     (PCwrite     ),
-  // .if_id_write (if_id_write ),
-    .PCsrc                             (PCsrc                     ),
-    .BranchPC                          (BranchPC                  ),
-    .IDReg_PC                          (IDReg_PC                  ),
-    .IDReg_Instr                       (IDReg_Instr               ),
-    .IDReg_op                          (IDReg_op                  ),
-    .IDReg_rs1                         (IDReg_rs1                 ),
-    .IDReg_rs2                         (IDReg_rs2                 ),
-    .IDReg_Regrd                       (IDReg_Regrd               ),
-    .IDReg_Func3                       (IDReg_Func3               ),
-    .IDReg_Func7                       (IDReg_Func7               ),
-    .if_diffen                         (if_diffen                 ),
-    .BPUClearCtr                       (BPUClearCtr               ),
-    .IDReg_csr                         (IDReg_csr                 ) 
+    .clk          (clk          ),
+    .rst          (rst          ),
+    .branch_taken (branch_taken ),
+    .BranchPC     (exe_mem_alu_out     ),
+    .PC_enable    (PC_enable    ),
+    // Outputs
+    .PC           (if_id_PC),
+    .Instr        (if_id_Instr        ),
+    .PC_4         (if_id_PC_4         )
 );
 
+IF_ID_REG  IF_ID_REG_inst (
+    .clk(clk),
+    .rst(rst),
+    .PC(if_id_PC),
+    .Instr(if_id_Instr),
+    .PC_4(if_id_PC_4),
+    .if_id_reg_enable(if_id_reg_enable),
+    .bpu_clear_ctrl(bpu_clear_ctr),
+    // Outputs
+    .if_id_reg(if_id_reg)
+  );
 
 IDU u_IDU(
-    .Reg_csren          (Reg_csren),
-    .EXReg_csr           (EXReg_csr),
-    .EXReg_CSRRegWr                    (EXReg_CSRRegWr            ),
-    .EXReg_CSRset                      (EXReg_CSRset              ),
-    .EXReg_ecall                       (EXReg_ecall               ),
-    .EXReg_ecall_package               (EXReg_ecall_package       ),
-    .EXReg_mret                        (EXReg_mret                ),
-    .IDReg_csr                         (IDReg_csr                 ),
-    .CSRin                             (CSRin                     ),
-    .CSRWren                           (CSRWren                   ),
-    .ecallen                           (ecallen                   ),
-    .ecall_packageen                   (ecall_packageen           ),
-    // .mreten                            (mreten                    ),
-    .EXReg_CSRout                      (EXReg_CSRout              ),
-    .EXReg_CSRRegvalid                 (EXReg_CSRRegvalid         ),
     .clk                               (clk                       ),
     .rst                               (rst                       ),
-    .IDReg_PC                          (IDReg_PC                  ),
-    .IDReg_Instr                       (IDReg_Instr               ),
-    .IDReg_op                          (IDReg_op                  ),
-    .IDReg_rs1                         (IDReg_rs1                 ),
-    .IDReg_rs2                         (IDReg_rs2                 ),
-    .IDReg_Regrd                       (IDReg_Regrd               ),
-    .IDReg_Func3                       (IDReg_Func3               ),
-    .IDReg_Func7                       (IDReg_Func7               ),
-    .HoldOnRegWr                       (HoldOnRegWr               ),
-    .Rw                                (Rw                        ),
-    .busW                              (busW                      ),
-  // .ClearCtr       (ClearCtr       ),
-    .EXReg_ALUAsrc                     (EXReg_ALUAsrc             ),
-    .EXReg_ALUBsrc                     (EXReg_ALUBsrc             ),
-    .EXReg_ALUctr                      (EXReg_ALUctr              ),
-    .EXReg_Branch                      (EXReg_Branch              ),
-    .EXReg_RegWr                       (EXReg_RegWr               ),
-    .EXReg_MemtoReg                    (EXReg_MemtoReg            ),
-    .EXReg_MemWr                       (EXReg_MemWr               ),
-    .EXReg_MemRd                       (EXReg_MemRd               ),
-    .EXReg_MemOp                       (EXReg_MemOp               ),
-    .EXReg_busA                        (EXReg_busA                ),
-    .EXReg_busB                        (EXReg_busB                ),
-    .EXReg_Regrd                       (EXReg_Regrd               ),
-    .EXReg_Regrs1                      (EXReg_Regrs1              ),
-    .EXReg_Regrs2                      (EXReg_Regrs2              ),
-    .EXReg_Imm                         (EXReg_Imm                 ),
-    .EXReg_PC                          (EXReg_PC                  ),
-    .EXReg_Instr                       (EXReg_Instr               ),
-    .BPUClearCtr                       (BPUClearCtr               ),
-    .if_diffen                         (if_diffen                 ),
-    .id_diffen                         (id_diffen                 ) 
+    .if_id_reg                         (if_id_reg                 ),
+    .wb_reg_wen                        (reg_wen                   ),
+    .wb_reg_waddr                      (reg_waddr                 ),
+    .wb_reg_wdata                      (reg_wdata                 ),
+    // Outputs
+    .PC                                (id_exe_PC                 ),
+    .Instr                             (id_exe_Instr              ),
+    .PC_4                              (id_exe_PC_4               ),
+    .reg_wen                           (id_exe_reg_wen            ),
+    .reg_wb_sel                        (id_exe_reg_wb_sel         ),
+    .aluasrc                           (id_exe_aluasrc            ),
+    .alubsrc                           (id_exe_alubsrc            ),
+    .alu_op                            (id_exe_alu_op             ),
+    .do_branch                         (id_exe_do_branch          ),
+    .do_jump                           (id_exe_do_jump            ),
+    .branch_cond                       (id_exe_branch_cond        ),
+    .mem_op                            (id_exe_mem_op             ),
+    .mem_wen                           (id_exe_mem_wen            ),
+    .mem_ren                           (id_exe_mem_ren            ),
+    .Imm                               (id_exe_Imm                ),
+    .raddr1                            (id_exe_raddr1             ),
+    .raddr2                            (id_exe_raddr2             ),
+    .reg_waddr                         (id_exe_reg_waddr          ),
+    .rdata1                            (id_exe_rdata1             ),
+    .rdata2                            (id_exe_rdata2             ) 
 );
 
+
+ID_EXE_REG  ID_EXE_REG_inst (
+    .clk                               (clk                       ),
+    .rst                               (rst                       ),
+    .PC                                (id_exe_PC                 ),
+    .Instr                             (id_exe_Instr              ),
+    .PC_4                              (id_exe_PC_4               ),
+    .reg_wen                           (id_exe_reg_wen            ),
+    .reg_wb_sel                        (id_exe_reg_wb_sel         ),
+    .aluasrc                           (id_exe_aluasrc            ),
+    .alubsrc                           (id_exe_alubsrc            ),
+    .alu_op                            (id_exe_alu_op             ),
+    .do_branch                         (id_exe_do_branch          ),
+    .do_jump                           (id_exe_do_jump            ),
+    .branch_cond                       (id_exe_branch_cond        ),
+    .mem_op                            (id_exe_mem_op             ),
+    .mem_wen                           (id_exe_mem_wen            ),
+    .mem_ren                           (id_exe_mem_ren            ),
+    .imm                               (id_exe_Imm                ),
+    .raddr1                            (id_exe_raddr1             ),
+    .raddr2                            (id_exe_raddr2             ),
+    .reg_waddr                         (id_exe_reg_waddr          ),
+    .rdata1                            (id_exe_rdata1             ),
+    .rdata2                            (id_exe_rdata2             ),
+    .hazard_clear_ctr                  (hazard_clear_ctr          ),
+    .bpu_clear_ctrl                    (bpu_clear_ctr            ),
+    // Outputs
+    .id_exe_reg                        (id_exe_reg                ) 
+  );
 
 EXU u_EXU(
-    .EXReg_csr              (EXReg_csr),
-    .WBReg_csr              (WBReg_csr),
-    .WBReg_CSRout           (WBReg_CSRout),
-    .WBReg_CSRRegvalid      (WBReg_CSRRegvalid),
-    .WBReg_CSRRegWr         (WBReg_CSRRegWr),
-    .WBReg_CSRset           (WBReg_CSRset),
-    .WBReg_ecall            (WBReg_ecall),
-    .WBReg_ecall_package    (WBReg_ecall_package),
-    // .WBReg_mret             (WBReg_mret),
-    .WBReg_ALUa             (WBReg_ALUa),
-    .EXReg_CSRout                      (EXReg_CSRout              ),
-    .EXReg_CSRRegvalid                 (EXReg_CSRRegvalid         ),
-    .EXReg_CSRRegWr                    (EXReg_CSRRegWr            ),
-    .EXReg_CSRset                      (EXReg_CSRset              ),
-    .EXReg_ecall                       (EXReg_ecall               ),
-    .EXReg_ecall_package               (EXReg_ecall_package       ),
-    .EXReg_mret                        (EXReg_mret                ),
-    .clk                               (clk                       ),
-    .rst                               (rst                       ),
-    .EXReg_ALUAsrc                     (EXReg_ALUAsrc             ),
-    .EXReg_ALUBsrc                     (EXReg_ALUBsrc             ),
-    .EXReg_ALUctr                      (EXReg_ALUctr              ),
-    .EXReg_Branch                      (EXReg_Branch              ),
-    .EXReg_MemtoReg                    (EXReg_MemtoReg            ),
-    .EXReg_MemWr                       (EXReg_MemWr               ),
-    .EXReg_MemRd                       (EXReg_MemRd               ),
-    .EXReg_MemOp                       (EXReg_MemOp               ),
-    .EXReg_RegWr                       (EXReg_RegWr               ),
-    .ForwardingA                       (ForwardingA               ),
-    .ForwardingB                       (ForwardingB               ),
-    .busW                              (busW                      ),
-    .EXReg_busA                        (EXReg_busA                ),
-    .EXReg_busB                        (EXReg_busB                ),
-    .EXReg_Regrd                       (EXReg_Regrd               ),
-    .EXReg_Imm                         (EXReg_Imm                 ),
-    .EXReg_PC                          (EXReg_PC                  ),
-    .EXReg_Instr                       (EXReg_Instr               ),
-    .PCsrc                             (PCsrc                     ),
-    .WBReg_PCsrc                       (WBReg_PCsrc               ),
-    .WBReg_RegWr                       (WBReg_RegWr               ),
-    .WBReg_MemtoReg                    (WBReg_MemtoReg            ),
-    .WBReg_Regrd                       (WBReg_Regrd               ),
-    .WBReg_ALUout                      (WBReg_ALUout              ),
-    .WBReg_DataOut                     (WBReg_DataOut             ),
-    .BranchPC                          (BranchPC                  ),
-    .WBReg_PC                          (WBReg_PC                  ),
-    .WBReg_Instr                       (WBReg_Instr               ),
-    .id_diffen                         (id_diffen                 ),
-    .ex_diffen                         (ex_diffen                 ) 
+    .id_exe_reg                        (id_exe_reg                ),
+    .forwardingA                       (forwardingA               ),
+    .forwardingB                       (forwardingB               ),
+    .exe_mem_reg_alu_out               (exe_mem_reg.alu_out       ),
+    .mem_wb_reg_wdata                  (reg_wdata                 ),
+    // Outputs
+    .branch_taken                      (branch_taken              ),
+    .PC                                (exe_mem_PC                ),
+    .Instr                             (exe_mem_Instr             ),
+    .PC_4                              (exe_mem_PC_4              ),
+    .reg_wen                           (exe_mem_reg_wen           ),
+    .reg_wb_sel                        (exe_mem_reg_wb_sel        ),
+    .mem_op                            (exe_mem_mem_op            ),
+    .mem_wen                           (exe_mem_mem_wen           ),
+    .mem_ren                           (exe_mem_mem_ren           ),
+    .reg_waddr                         (exe_mem_reg_waddr         ),
+    .alu_out                           (exe_mem_alu_out           ),
+    .rs2                               (exe_mem_rs2               ) 
 );
 
-WBU u_WBU(
-    .WBReg_csr                  (WBReg_csr),
-    .Reg_csren              (Reg_csren),
-    .CSRin                             (CSRin                     ),
-    .CSRWren                           (CSRWren                   ),
-    .ecallen                           (ecallen                   ),
-    .ecall_packageen                   (ecall_packageen           ),
-    // .mreten                            (mreten                    ),
-    .WBReg_CSRout                      (WBReg_CSRout              ),
-    .WBReg_CSRRegvalid                 (WBReg_CSRRegvalid         ),
-    .WBReg_CSRRegWr                    (WBReg_CSRRegWr            ),
-    .WBReg_CSRset                      (WBReg_CSRset              ),
-    .WBReg_ecall                       (WBReg_ecall               ),
-    .WBReg_ecall_package               (WBReg_ecall_package       ),
-    // .WBReg_mret                        (WBReg_mret                ),
-    .WBReg_ALUa                        (WBReg_ALUa                ),
+EXE_MEM_REG  EXE_MEM_REG_inst (
     .clk                               (clk                       ),
     .rst                               (rst                       ),
-    .WBReg_MemtoReg                    (WBReg_MemtoReg            ),
-    .WBReg_RegWr                       (WBReg_RegWr               ),
-    .WBReg_Regrd                       (WBReg_Regrd               ),
-    .WBReg_ALUout                      (WBReg_ALUout              ),
-    .WBReg_DataOut                     (WBReg_DataOut             ),
-    .WBReg_PC                          (WBReg_PC                  ),
-    .WBReg_Instr                       (WBReg_Instr               ),
-    .HoldOnRegWr                       (HoldOnRegWr               ),
-    .Rw                                (Rw                        ),
-    .busW                              (busW                      ),
-    .HoldPC                            (HoldPC                    ),
-    .HoldInstr                         (HoldInstr                 ),
-    .ex_diffen                         (ex_diffen                 ),
-    .wb_diffen                         (wb_diffen                 ),
-    .WBReg_PCsrc                       (WBReg_PCsrc               ),
-    .HoldPCsrc                         (HoldPCsrc                 ) 
+    .PC                                (exe_mem_PC                ),
+    .Instr                             (exe_mem_Instr             ),
+    .PC_4                              (exe_mem_PC_4              ),
+    .reg_wen                           (exe_mem_reg_wen           ),
+    .reg_wb_sel                        (exe_mem_reg_wb_sel        ),
+    .mem_op                            (exe_mem_mem_op            ),
+    .mem_wen                           (exe_mem_mem_wen           ),
+    .mem_ren                           (exe_mem_mem_ren           ),
+    .reg_waddr                         (exe_mem_reg_waddr         ),
+    .alu_out                           (exe_mem_alu_out           ),
+    .rs2                               (exe_mem_rs2               ),
+    .bpu_clear_ctrl                    (bpu_clear_ctr            ),
+    // Outputs
+    .exe_mem_reg                       (exe_mem_reg               ) 
+  );
+
+MEMU u_MEMU(
+    .clk                               (clk                       ),
+    .rst                               (rst                       ),
+    .exe_mem_reg                       (exe_mem_reg               ),
+    // Outputs
+    .PC                                (mem_wb_PC                 ),
+    .Instr                             (mem_wb_Instr              ),
+    .PC_4                              (mem_wb_PC_4               ),
+    .reg_wen                           (mem_wb_reg_wen            ),
+    .reg_wb_sel                        (mem_wb_reg_wb_sel         ),
+    .reg_waddr                         (mem_wb_reg_waddr          ),
+    .alu_out                           (mem_wb_alu_out            ),
+    .mem_out                           (mem_wb_mem_out            ) 
+);
+
+MEM_WB_REG  MEM_WB_REG_inst (
+    .clk                               (clk                       ),
+    .rst                               (rst                       ),
+    .PC                                (mem_wb_PC                 ),
+    .Instr                             (mem_wb_Instr              ),
+    .PC_4                              (mem_wb_PC_4               ),
+    .reg_wen                           (mem_wb_reg_wen            ),
+    .reg_wb_sel                        (mem_wb_reg_wb_sel         ),
+    .reg_waddr                         (mem_wb_reg_waddr          ),
+    .alu_out                           (mem_wb_alu_out            ),
+    .mem_out                           (mem_wb_mem_out            ),
+    // Outputs
+    .mem_wb_reg                        (mem_wb_reg                ) 
+  );
+
+WBU u_WBU(
+    .mem_wb_reg                        (mem_wb_reg                ),
+    // Outputs
+    .reg_wen                           (reg_wen                   ),
+    .reg_waddr                         (reg_waddr                 ),
+    .reg_wdata                         (reg_wdata                 )
 );
 
 ForwardingUnit u_ForwardingUnit(
-    .EXReg_Regrs1                      (EXReg_Regrs1              ),
-    .EXReg_Regrs2                      (EXReg_Regrs2              ),
-    .WBReg_Regrd                       (WBReg_Regrd               ),
-    .WBReg_RegWr                       (WBReg_RegWr               ),
-    .ForwardingA                       (ForwardingA               ),
-    .ForwardingB                       (ForwardingB               ) 
+    .id_exe_reg_rs1                    (id_exe_reg.rs1            ),
+    .id_exe_reg_rs2                    (id_exe_reg.rs2            ),
+    .exe_mem_reg_waddr                 (exe_mem_reg.waddr         ),
+    .mem_wb_reg_waddr                  (mem_wb_reg.waddr          ),
+    .exe_mem_reg_wen                   (exe_mem_reg.wen           ),
+    .mem_wb_reg_wen                    (mem_wb_reg.wen            ),
+    // Outputs
+    .forwardingA                       (forwardingA               ),
+    .forwardingB                       (forwardingB               ) 
 );
 
-// HazardDetectionUnit u_HazardDetectionUnit(
-//   .EXReg_MemRd (EXReg_MemRd ),
-//   .EXReg_Regrd (EXReg_Regrd ),
-//   .IDReg_rs1   (IDReg_rs1   ),
-//   .IDReg_rs2   (IDReg_rs2   ),
-//   .PCwrite     (PCwrite     ),
-//   .if_id_write (if_id_write ),
-//   .ClearCtr    (ClearCtr    )
-// );
+HazardDetectionUnit u_HazardDetectionUnit(
+    .id_exe_reg_mem_ren                (id_exe_reg.mem_ren        ),
+    .id_exe_reg_waddr                  (id_exe_reg.reg_waddr      ),
+    .if_id_reg_rs1                     (if_id_reg.rs1             ),
+    .if_id_reg_rs2                     (if_id_reg.rs2             ),
+    // Outputs
+    .PC_enable                         (PC_enable                 ),
+    .if_id_reg_enable                  (if_id_reg_enable          ),
+    .hazard_clear_ctr                  (hazard_clear_ctr          ) 
+);
 
 BPU u_BPU(
-    .PCsrc                             (PCsrc                     ),
-    .BPUClearCtr                       (BPUClearCtr               ) 
+    .branch_taken  (branch_taken  ),
+    // Outputs
+    .bpu_clear_ctr (bpu_clear_ctr )
 );
 
-`ifdef DIFFTEST
-Difftest u_Difftest(
-    .wb_diffen                         (wb_diffen                 ),
-    .PC                                (HoldPC                    ),
-    .Instr                             (HoldInstr                 ),
-    .diffen                            (diffen                    ),
-    .diffPC                            (diffPC                    ),
-    .diffInstr                         (diffInstr                 ),
-    .IDReg_PC                          (IDReg_PC                  ),
-    .WBReg_PC                          (WBReg_PC                  ),
-    .HoldPCsrc                         (HoldPCsrc                 ),
-    .nextPC                            (nextPC                    ) 
-);
-`endif
 
 
 
+    
 endmodule

@@ -1,4 +1,4 @@
-`include "define.vh"
+`include "define.v"
 
 module InstrMemCtrl (
     input wire clk,
@@ -17,6 +17,7 @@ always @(*) begin
     else begin
         // $display("RdAddr = %x\n", RdAddr);
         Instr = mem_read(RdAddr, 1);
+        
     end
 end
     

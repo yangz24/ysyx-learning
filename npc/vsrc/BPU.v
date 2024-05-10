@@ -1,10 +1,13 @@
-`include "define.v" 
+`include "define.vh" 
 
 module BPU (
-    input wire PCsrc,
-    output wire BPUClearCtr
+    // PC source signal control
+    input wire branch_taken,
+
+    // BPU clear control signal
+    output wire bpu_clear_ctr
 );
     
-assign BPUClearCtr = PCsrc? 1 : 0;
+assign bpu_clear_ctr = branch_taken? 1 : 0;
 
 endmodule

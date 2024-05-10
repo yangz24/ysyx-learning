@@ -1,17 +1,23 @@
-// `include "define.v"
+`include "define.vh"
 
-// module HazardDetectionUnit (
-//     input wire EXReg_MemRd,
-//     input wire [`ADDR_WIDTH-1:0] EXReg_Regrd,
-//     input wire [`ADDR_WIDTH-1:0] IDReg_rs1,
-//     input wire [`ADDR_WIDTH-1:0] IDReg_rs2,
-//     output reg PCwrite,
-//     output reg if_id_write,
-//     output reg ClearCtr
-// );
+module HazardDetectionUnit (
+    input wire id_exe_reg_mem_ren,
+    input wire [`REG_ADDR_WIDTH-1:0] id_exe_reg_waddr,
+    input wire [`REG_ADDR_WIDTH-1:0] if_id_reg_rs1,
+    input wire [`REG_ADDR_WIDTH-1:0] if_id_reg_rs2,
 
-// assign PCwrite = (EXReg_MemRd && ((EXReg_Regrd == IDReg_rs1) || (EXReg_Regrd == IDReg_rs2)))? 0 : 1; // 1代表允许PC变化
-// assign if_id_write = (EXReg_MemRd && ((EXReg_Regrd == IDReg_rs1) || (EXReg_Regrd == IDReg_rs2)))? 0 : 1; // 1代表允许if_id流水线寄存器变化
-// assign ClearCtr = (EXReg_MemRd && ((EXReg_Regrd == IDReg_rs1) || (EXReg_Regrd == IDReg_rs2)))? 1 : 0; // 1 代表清0控制信号
+    // enable PC change
+    output reg PC_enable,
 
-// endmodule
+    // enable if_id pipeline register change
+    output reg if_id_reg_enable,
+
+    // clear control signal
+    output reg hazard_clear_ctr
+);
+
+assign PC_enable = (id_exe_reg_mem_ren && ((id_exe_reg_waddr == if_id_reg_rs1) || (id_exe_reg_waddr == if_id_reg_rs2)))? 0 : 1; 
+assign if_id_reg_enable = (id_exe_reg_mem_ren && ((id_exe_reg_waddr == if_id_reg_rs1) || (id_exe_reg_waddr == if_id_reg_rs2)))? 0 : 1; 
+assign hazard_clear_ctr = (id_exe_reg_mem_ren && ((id_exe_reg_waddr == if_id_reg_rs1) || (id_exe_reg_waddr == if_id_reg_rs2)))? 1 : 0; 
+
+endmodule

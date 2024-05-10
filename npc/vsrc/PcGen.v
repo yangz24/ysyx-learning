@@ -1,29 +1,41 @@
-`include "define.v"
+`include "define.vh"
 
 module PcGen (
     input wire clk,
     input wire rst,
-    // input wire PCwrite,
-    input wire PCsrc, 
-    input wire [`DATA_WIDTH-1:0] BranchPC,
-    output reg [`DATA_WIDTH-1:0] PC
+
+    // branch_taken for jump
+    input wire branch_taken, 
+
+    // BranchPC for jump
+    input wire [`PC_WIDTH-1:0] BranchPC,
+
+    // enable PC change
+    input wire PC_enable,
+
+    // PC adn PC + 4
+    output reg [`PC_WIDTH-1:0] PC,
+    output wire [`PC_WIDTH-1:0] PC_4
 );
 
-parameter RESET_VAL = 32'h80000000;
+/******************************************** next PC ********************************************/
+wire [`PC_WIDTH-1:0] NextPC;
 
-wire [`DATA_WIDTH-1:0] PCA;
-wire [`DATA_WIDTH-1:0] NextPC;
+// PC_4 generate
+    assign PC_4 = PC + `PC_add_4;
 
-assign PCA = PC + 4;
-assign NextPC = PCsrc? BranchPC : PCA; // 1 跳转, 0 不跳转
+assign NextPC = branch_taken? BranchPC : PC_4; // branch_taken for jump
 
+// PC generate
 always @(posedge clk ) begin
     if (rst) begin
-        PC <= RESET_VAL;
+        PC <= `PCStart;
     end
-    else begin // if (PCwrite == 1'b1) begin
+    else if (PC_enable) begin 
         PC <= NextPC;
     end
 end
+
+
     
 endmodule
