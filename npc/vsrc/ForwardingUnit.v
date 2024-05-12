@@ -2,8 +2,8 @@
 
 module ForwardingUnit (
     // read regfile addr
-    input wire [`REG_ADDR_WIDTH-1:0] id_exe_reg_rs1,
-    input wire [`REG_ADDR_WIDTH-1:0] id_exe_reg_rs2,
+    input wire [`REG_ADDR_WIDTH-1:0] id_exe_reg_raddr1,
+    input wire [`REG_ADDR_WIDTH-1:0] id_exe_reg_raddr2,
 
     // write regfile addr
     input wire [`REG_ADDR_WIDTH-1:0] exe_mem_reg_waddr,
@@ -20,18 +20,18 @@ module ForwardingUnit (
 
 assign forwardingA = (exe_mem_reg_wen &&  
                       exe_mem_reg_waddr != 0 && 
-                      exe_mem_reg_waddr == id_exe_reg_rs1) ? `FORWARDING_A_EXE_MEM : 
+                      exe_mem_reg_waddr == id_exe_reg_raddr1) ? `FORWARDING_A_EXE_MEM : 
                      (mem_wb_reg_wen && 
                      mem_wb_reg_waddr != 0 && 
-                     mem_wb_reg_waddr == id_exe_reg_rs1) ? `FORWARDING_A_MEM_WB : 
+                     mem_wb_reg_waddr == id_exe_reg_raddr1) ? `FORWARDING_A_MEM_WB : 
                      `FORWARDING_A_ID_EX;
 
 assign forwardingB = (exe_mem_reg_wen &&  
                       exe_mem_reg_waddr != 0 && 
-                      exe_mem_reg_waddr == id_exe_reg_rs2) ? `FORWARDING_B_EXE_MEM : 
+                      exe_mem_reg_waddr == id_exe_reg_raddr2) ? `FORWARDING_B_EXE_MEM : 
                      (mem_wb_reg_wen && 
                      mem_wb_reg_waddr != 0 && 
-                     mem_wb_reg_waddr == id_exe_reg_rs2) ? `FORWARDING_B_MEM_WB : 
+                     mem_wb_reg_waddr == id_exe_reg_raddr2) ? `FORWARDING_B_MEM_WB : 
                      `FORWARDING_B_ID_EX;
 
 

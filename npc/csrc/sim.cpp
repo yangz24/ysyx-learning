@@ -23,8 +23,8 @@ void sim_init(){
 /* 波形抓取 */
 void step_and_dump_wave(){
 	CPU->eval();
-	// contextp->timeInc(1);
-	// tfp->dump(contextp->time());
+	contextp->timeInc(1);
+	tfp->dump(contextp->time());
 }
 /* 仿真退出 */
 void sim_exit(){

@@ -2,8 +2,17 @@
 `include "define_pipelineregs.vh"
 
 module EXU (
-    // id_exe_reg input
-    input type_id_exe_reg id_exe_reg,
+    input wire clk,
+    input wire rst,
+
+    // id_exe_bus input
+    input wire [`ID_EXE_BUS_WIDTH-1:0] id_exe_bus,
+
+    // flush pipeline registers 
+    input wire hazard_clear_ctrl,
+
+    // bpu flush pipeline registers
+    input wire bpu_clear_ctrl,
 
     // forwarding selection
     input [`FORWARDING_A_LENGTH-1:0] forwardingA,
@@ -11,35 +20,41 @@ module EXU (
 
     // forwarding data
     input [`DATA_WIDTH-1:0] exe_mem_reg_alu_out,
-    input [`DATA_WIDTH-1:0] mem_wb_reg_wdata,
+    input [`DATA_WIDTH-1:0] wb_reg_wdata,
 
     // branch judgement output
     output wire branch_taken,
+    output wire [`PC_WIDTH-1:0] branch_PC,
 
-    // hold on pipeline signals
-    // expends from id stage
-    output wire [`PC_WIDTH-1:0] PC,
-    output wire [`DATA_WIDTH-1:0] Instr,
-    output wire [`PC_WIDTH-1:0] PC_4,
-    // control signals hold from id stage
-    output wire reg_wen,
-    output wire [`REG_WRITE_BACK_SEL_LENGTH-1:0] reg_wb_sel,
-    output wire [`MEM_CTRL_LENGTH-1:0] mem_op,
-    output wire mem_wen,
-    output wire mem_ren,
-    // decoder output for regfile
-    output wire [`REG_ADDR_WIDTH-1:0] reg_waddr,
+    // for forwarding detection
+    output wire [`REG_ADDR_WIDTH-1:0] id_exe_reg_raddr1,
+    output wire [`REG_ADDR_WIDTH-1:0] id_exe_reg_raddr2,
 
-    // alu output for pipeline reg
-    output wire [`DATA_WIDTH-1:0] alu_out,
+    // for hazard detection
+    output wire id_exe_reg_mem_ren,
+    output wire [`REG_ADDR_WIDTH-1:0] id_exe_reg_waddr,
 
-    // rs2 for pipeline reg
-    output wire [`DATA_WIDTH-1:0] rs2
+    // for difftest
+    output wire [`PC_WIDTH-1:0] id_exe_reg_PC,
+
+    // exe_mem_bus output
+    output wire [`EXE_MEM_BUS_WIDTH-1:0] exe_mem_bus
+
 );
 
+/******************************************** id_exe_reg pipeline register ***********************************************/
+reg [`ID_EXE_BUS_WIDTH-1:0] id_exe_reg;
+
+/******************************************** internal used signals ********************************************/
 // real rs1 and rs2
 wire [`DATA_WIDTH-1:0] rs1;
 
+// alu source selection
+wire aluasrc;
+wire alubsrc;
+
+// alu operation selection
+wire [`ALU_CTRL_LENGTH-1:0] alu_op;
 // alu source
 wire [`DATA_WIDTH-1:0] A;
 wire [`DATA_WIDTH-1:0] B;
@@ -47,29 +62,103 @@ wire [`DATA_WIDTH-1:0] B;
 // conditional branch judgement output
 wire cond_branch_taken;
 
+// branch control signals
+wire do_branch;
+wire do_jump;
+wire [`BRANCH_COND_LENGTH-1:0] branch_cond;
+
+// immediate value
+wire [`DATA_WIDTH-1:0] imm;
+
+// register address for rs1 and rs2
+wire [`REG_ADDR_WIDTH-1:0] raddr1;
+wire [`REG_ADDR_WIDTH-1:0] raddr2;
+
+// register data for rs1 and rs2
+wire [`DATA_WIDTH-1:0] rdata1;
+wire [`DATA_WIDTH-1:0] rdata2;
+
 // reserved for future use
 wire Zero;
 wire Less;
 
+/******************************************** exe_mem_bus signals ********************************************/
+// expends from id stage
+wire [`PC_WIDTH-1:0] PC;
+wire [`DATA_WIDTH-1:0] Instr;
+wire [`PC_WIDTH-1:0] PC_4;
+// control signals hold from id stage
+wire reg_wen;
+wire [`REG_WRITE_BACK_SEL_LENGTH-1:0] reg_wb_sel;
+wire [`MEM_CTRL_LENGTH-1:0] mem_op;
+wire mem_wen;
+wire mem_ren;
+// decoder output for regfile
+wire [`REG_ADDR_WIDTH-1:0] reg_waddr;
+// alu output
+wire [`DATA_WIDTH-1:0] alu_out;
+// rs2 for memory datain
+wire [`DATA_WIDTH-1:0] rs2;
+
+// for debug
+wire diffen;
+
+/******************************************** id_exe_reg update ********************************************/
+always @(posedge clk) begin
+    if (rst || hazard_clear_ctrl || bpu_clear_ctrl) begin
+        id_exe_reg <= 0;
+    end
+    else begin
+        id_exe_reg <= id_exe_bus;
+    end
+end
+
+assign {
+    PC,
+    Instr,
+    PC_4,
+    reg_wen,
+    reg_wb_sel,
+    aluasrc,
+    alubsrc,
+    alu_op,
+    do_branch,
+    do_jump,
+    branch_cond,
+    mem_op,
+    mem_wen,
+    mem_ren,
+    imm,
+    raddr1,
+    raddr2,
+    reg_waddr,
+    rdata1,
+    rdata2,
+    diffen
+} = id_exe_reg;
+
+/******************************************** for forwarding detection ********************************************/
+assign id_exe_reg_raddr1 = raddr1;
+assign id_exe_reg_raddr2 = raddr2;
 /******************************************** forwarding ********************************************/
 
 assign rs1 = (forwardingA == `FORWARDING_A_EXE_MEM)? exe_mem_reg_alu_out : // rs1 is from last alu output
-             (forwardingA == `FORWARDING_A_MEM_WB)? mem_wb_reg_wdata : // rs1 is from mem_wb_reg
-             id_exe_reg.rdata1; // rs1 is from id_exe_reg
+             (forwardingA == `FORWARDING_A_MEM_WB)? wb_reg_wdata : // rs1 is from mem_wb_reg
+             rdata1; // rs1 is from id_exe_reg
 
 assign rs2 = (forwardingB == `FORWARDING_B_EXE_MEM)? exe_mem_reg_alu_out : // rs1 is from last alu output
-             (forwardingB == `FORWARDING_B_MEM_WB)? mem_wb_reg_wdata : // rs1 is from mem_wb_reg
-             id_exe_reg.rdata2; // rs1 is from id_exe_reg
+             (forwardingB == `FORWARDING_B_MEM_WB)? wb_reg_wdata : // rs1 is from mem_wb_reg
+             rdata2; // rs1 is from id_exe_reg
 
 /******************************************** alu module ********************************************/
 
-assign A = (id_exe_reg.aluasrc == `ALU_ASRC_RS1)? rs1 : id_exe_reg.PC;
-assign B = (id_exe_reg.alubsrc == `ALU_BSRC_RS2)? rs2 : id_exe_reg.imm;
+assign A = (aluasrc == `ALU_ASRC_RS1)? rs1 : PC;
+assign B = (alubsrc == `ALU_BSRC_RS2)? rs2 : imm;
 
 ALU u_ALU(
     .A                                 (A                         ),
     .B                                 (B                         ),
-    .alu_op                            (id_exe_reg.alu_op         ),
+    .alu_op                            (alu_op                    ),
     .Zero                              (Zero                      ),
     .Less                              (Less                      ),
     .alu_out                           (alu_out                   ) 
@@ -78,23 +167,36 @@ ALU u_ALU(
 /******************************************** branch judgement ********************************************/
 
 Branch u_Branch(
-    .branch_op                         (id_exe_reg.branch_cond      ),
+    .branch_op                         (branch_cond               ),
     .rs1                               (rs1                       ),
     .rs2                               (rs2                       ),
     .cond_branch_taken                 (cond_branch_taken         ) 
 );
 
-assign branch_taken = (id_exe_reg.do_branch & cond_branch_taken) | id_exe_reg.do_jump;
+assign branch_taken = (do_branch & cond_branch_taken) | do_jump;
+assign branch_PC = alu_out;
 
-/******************************************** hold on pipeline signals ********************************************/
-assign PC = id_exe_reg.PC;
-assign Instr = id_exe_reg.Instr;
-assign PC_4 = id_exe_reg.PC_4;
-assign reg_wen = id_exe_reg.reg_wen;
-assign reg_wb_sel = id_exe_reg.reg_wb_sel;
-assign mem_op = id_exe_reg.mem_op;
-assign mem_wen = id_exe_reg.mem_wen;
-assign mem_ren = id_exe_reg.mem_ren;
-assign reg_waddr = id_exe_reg.reg_waddr;
+/******************************************** for hazard detection ********************************************/
+assign id_exe_reg_mem_ren = mem_ren;
+assign id_exe_reg_waddr = reg_waddr;
+
+/******************************************** for difftest ********************************************/
+assign id_exe_reg_PC = PC;
+/******************************************** exe_mem_bus output ********************************************/
+assign exe_mem_bus = {
+    PC,
+    Instr,
+    PC_4,
+    reg_wen,
+    reg_wb_sel,
+    mem_op,
+    mem_wen,
+    mem_ren,
+    reg_waddr,
+    alu_out,
+    rs2,
+    diffen,
+    branch_taken
+};
 
 endmodule

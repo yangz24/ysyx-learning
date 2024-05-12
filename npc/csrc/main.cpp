@@ -18,7 +18,7 @@ int main(int argc, char *argv[]) {
   }
   /* 初始化仿真环境 */
   sim_init();
-  reset(10);
+  reset(1);
   /* 启动npc */
   init_monitor(argc, argv);
   engine_start();

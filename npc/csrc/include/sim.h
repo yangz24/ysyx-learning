@@ -20,11 +20,11 @@ extern VCPU* CPU;
 
 #ifdef CONFIG_DIFFTEST
 #define NEXTPC CPU->nextPC
-#define Instr CPU->diffInstr
-#define DIFFEN CPU->diffen
+#define Instr CPU->diff_Instr
+#define DIFFEN CPU->diff_enable
 #endif
 
-#define PC CPU->diffPC
+#define PC CPU->diff_PC
 #define NPC_REG CPU->rootp->CPU__DOT__u_IDU__DOT__u_RegisterFile__DOT__rf
 #define EBREAK CPU->nextPC
 

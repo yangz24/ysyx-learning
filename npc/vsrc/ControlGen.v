@@ -43,12 +43,14 @@ module ControlGen (
     assign reg_wen = (ExtOp == `EXTOP_I || ExtOp == `EXTOP_U || ExtOp == `EXTOP_J || ExtOp == `EXTOP_R) ? 1 : 0;
 
     // regfile write back select
-    assign reg_wb_sel = (opcode == `OPCODE_I_LOAD) ? `REG_WRITE_BACK_SEL_MEM : `REG_WRITE_BACK_SEL_ALU;
+    assign reg_wb_sel = (opcode == `OPCODE_I_LOAD) ? `REG_WRITE_BACK_SEL_MEM : 
+                        (opcode == `OPCODE_J || opcode == `OPCODE_I_JALR) ? `REG_WRITE_BACK_SEL_PC_4 : 
+                        `REG_WRITE_BACK_SEL_ALU;
 
     /******************************************** ALU control ********************************************/
     // alua source select
     // only auipc/jalr/jal type instruction will use PC as alua source
-    assign aluasrc = (opcode == `OPCODE_U_AUIPC || opcode == `OPCODE_I_JALR || opcode == `OPCODE_J) ? `ALU_ASRC_PC : `ALU_ASRC_RS1;
+    assign aluasrc = (opcode == `OPCODE_U_AUIPC ||  opcode == `OPCODE_J || opcode == `OPCODE_B) ? `ALU_ASRC_PC : `ALU_ASRC_RS1;
 
     // alub source select
     // only R type instruction will use rs2 as alub source
@@ -66,23 +68,23 @@ module ControlGen (
         else if (opcode == `OPCODE_U_LUI) begin
             alu_op = `ALU_CTRL_COPY_B; // lui for copy immediate to rd
         end
-        else if (opcode == `OPCODE_I_INT || opcode == `OPCODE_R) begin
-            casez ({func7[5], func3})
-                {`FUNC7_5_ADD_OR_LOGIC, `FUNC3_ADD}: alu_op = `ALU_CTRL_ADD;
-                {`FUNC7_5_SUB_OR_ARITH, `FUNC3_ADD}: alu_op = `ALU_CTRL_SUB;
-                {1'bz, `FUNC3_LEFT_SHIFT}: alu_op = `ALU_CTRL_SLL;
-                {1'bz, `FUNC3_LESS_THAN_SET}: alu_op = `ALU_CTRL_SLT;
-                {1'bz, `FUNC3_LESS_THAN_U_SET}: alu_op = `ALU_CTRL_SLTU;
-                {1'bz, `FUNC3_XOR}: alu_op = `ALU_CTRL_XOR;
-                {`FUNC7_5_ADD_OR_LOGIC, `FUNC3_RIGHT_SHIFT}: alu_op = `ALU_CTRL_SLR;
-                {`FUNC7_5_SUB_OR_ARITH, `FUNC3_RIGHT_SHIFT}: alu_op = `ALU_CTRL_SAR;
-                {1'bz, `FUNC3_OR}: alu_op = `ALU_CTRL_OR;
-                {1'bz, `FUNC3_AND}: alu_op = `ALU_CTRL_AND;
-                default: alu_op = `ALU_CTRL_DEFAULT; // do nothing
-            endcase
+        else if (opcode == `OPCODE_I_INT) begin
+            case (func3)
+                3'b011:  alu_op = 4'b1010; // func3 is 011 for sltiu
+                3'b101:  alu_op = {func7[5], 3'b101}; // func7[5] is 1 for srai, 0 for srli
+                default: alu_op = {1'b0, func3}; 
+            endcase           
         end
+        else if (opcode == `OPCODE_R) begin
+            case (func3)
+                3'b011:  alu_op = 4'b1010; // func3 is 011 for sltu
+                3'b101:  alu_op = {func7[5], 3'b101}; // func7[5] is 1 for sra, 0 for srl
+                3'b000:  alu_op = {func7[5], 3'b000}; // func7[5] is 1 for sub, 0 for add
+                default: alu_op = {1'b0, func3};
+            endcase
+        end 
         else begin
-            alu_op = `ALU_CTRL_DEFAULT; // do nothing
+            alu_op = `ALU_CTRL_DEFAULT; // do add
         end
     end
 
@@ -93,7 +95,7 @@ module ControlGen (
 
     // jump condition select
     // only J type instruction will use jump condition
-    assign do_jump = (opcode == `OPCODE_J) ? 1 : 0;
+    assign do_jump = (opcode == `OPCODE_J || opcode == `OPCODE_I_JALR) ? 1 : 0;
 
     // branch condition select
     assign branch_cond = (opcode == `OPCODE_B) ? func3 : `BRANCH_COND_DEFAULT;
