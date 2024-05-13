@@ -12,7 +12,10 @@ module Difftest (
     input  wire        [`DATA_WIDTH-1:0]Instr                      ,
     input  wire                         branch_taken               ,
 
-
+    // hazard detection
+    input  wire                         hazard_detected            ,
+    input  wire        [`DATA_WIDTH-1:0]exe_mem_PC                 ,
+    
     // branch PC
     input  wire        [`DATA_WIDTH-1:0]branch_PC                  ,
 
@@ -58,7 +61,9 @@ always @(posedge clk ) begin
     end
 end
 
-assign nextPC = diff_branch_taken? branch_PC : PC;
+assign nextPC = diff_branch_taken? branch_PC : 
+                hazard_detected? exe_mem_PC : 
+                PC;
 
 endmodule
 

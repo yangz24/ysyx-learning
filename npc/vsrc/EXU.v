@@ -8,8 +8,8 @@ module EXU (
     // id_exe_bus input
     input wire [`ID_EXE_BUS_WIDTH-1:0] id_exe_bus,
 
-    // flush pipeline registers 
-    input wire hazard_clear_ctrl,
+    // // flush pipeline registers 
+    // input wire hazard_clear_ctrl,
 
     // bpu flush pipeline registers
     input wire bpu_clear_ctrl,
@@ -36,6 +36,14 @@ module EXU (
 
     // for difftest
     output wire [`PC_WIDTH-1:0] id_exe_reg_PC,
+
+    // handshake signals with last stage
+    input wire s_valid,
+    output wire s_ready,
+
+    // handshake signals with next stage
+    output reg m_valid,
+    input wire m_ready,
 
     // exe_mem_bus output
     output wire [`EXE_MEM_BUS_WIDTH-1:0] exe_mem_bus
@@ -101,14 +109,40 @@ wire [`DATA_WIDTH-1:0] alu_out;
 wire [`DATA_WIDTH-1:0] rs2;
 
 // for debug
-wire diffen;
+// wire diffen;
 
-/******************************************** id_exe_reg update ********************************************/
-always @(posedge clk) begin
-    if (rst || hazard_clear_ctrl || bpu_clear_ctrl) begin
+/******************************************** handshake ********************************************/
+wire ready_go = 1'b1; // data is prepared, ready to go
+reg s_valid_r;
+reg pipe_is_valid; // pipeline is valid, reg from last stage
+
+assign s_ready = ~pipe_is_valid || (m_ready && ready_go);
+assign m_valid = pipe_is_valid && ready_go;
+assign pipe_is_valid = s_valid_r;
+
+always @(posedge clk ) begin
+    if (rst) begin
+        s_valid_r <= 0;
+    end
+    else if (s_ready) begin
+        s_valid_r <= s_valid;
+    end
+end
+
+// always @(posedge clk) begin
+//     if (rst || hazard_clear_ctrl || bpu_clear_ctrl) begin
+//         id_exe_reg <= 0;
+//     end
+//     else begin
+//         id_exe_reg <= id_exe_bus;
+//     end
+// end
+
+always @(posedge clk ) begin
+    if (rst) begin
         id_exe_reg <= 0;
     end
-    else begin
+    else if (s_valid && s_ready) begin
         id_exe_reg <= id_exe_bus;
     end
 end
@@ -133,13 +167,13 @@ assign {
     raddr2,
     reg_waddr,
     rdata1,
-    rdata2,
-    diffen
+    rdata2
+    // diffen
 } = id_exe_reg;
 
 /******************************************** for forwarding detection ********************************************/
-assign id_exe_reg_raddr1 = raddr1;
-assign id_exe_reg_raddr2 = raddr2;
+assign id_exe_reg_raddr1 = pipe_is_valid? raddr1 : 0;
+assign id_exe_reg_raddr2 = pipe_is_valid? raddr2 : 0;
 /******************************************** forwarding ********************************************/
 
 assign rs1 = (forwardingA == `FORWARDING_A_EXE_MEM)? exe_mem_reg_alu_out : // rs1 is from last alu output
@@ -173,15 +207,15 @@ Branch u_Branch(
     .cond_branch_taken                 (cond_branch_taken         ) 
 );
 
-assign branch_taken = (do_branch & cond_branch_taken) | do_jump;
-assign branch_PC = alu_out;
+assign branch_taken = pipe_is_valid? ((do_branch & cond_branch_taken) | do_jump) : 1'b0;
+assign branch_PC = pipe_is_valid? alu_out : 0;
 
 /******************************************** for hazard detection ********************************************/
-assign id_exe_reg_mem_ren = mem_ren;
-assign id_exe_reg_waddr = reg_waddr;
+assign id_exe_reg_mem_ren = pipe_is_valid? mem_ren : 0;
+assign id_exe_reg_waddr = pipe_is_valid? reg_waddr : 0;
 
 /******************************************** for difftest ********************************************/
-assign id_exe_reg_PC = PC;
+assign id_exe_reg_PC = pipe_is_valid? PC : 0;
 /******************************************** exe_mem_bus output ********************************************/
 assign exe_mem_bus = {
     PC,
@@ -195,7 +229,7 @@ assign exe_mem_bus = {
     reg_waddr,
     alu_out,
     rs2,
-    diffen,
+    // diffen,
     branch_taken
 };
 

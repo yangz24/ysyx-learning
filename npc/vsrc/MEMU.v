@@ -8,8 +8,8 @@ module MEMU (
     // exe_mem_bus input
     input wire [`EXE_MEM_BUS_WIDTH-1:0] exe_mem_bus,
 
-    // bpu flush pipeline register
-    input wire bpu_clear_ctrl, 
+    // // bpu flush pipeline register
+    // input wire bpu_clear_ctrl, 
 
     // alu_out forwarding 
     output wire [`DATA_WIDTH-1:0] exe_mem_reg_alu_out,
@@ -17,6 +17,17 @@ module MEMU (
     // for forwarding detection
     output wire [`REG_ADDR_WIDTH-1:0] exe_mem_reg_waddr,
     output wire exe_mem_reg_wen,
+
+    // for hazard detection
+    output wire [`PC_WIDTH-1:0] exe_mem_PC,
+
+    // handshake signals with last stage
+    input wire s_valid,
+    output wire s_ready,
+
+    // handshake signals with next stage
+    output reg m_valid,
+    input wire m_ready,
 
     // mem_wb_bus output
     output wire [`MEM_WB_BUS_WIDTH-1:0] mem_wb_bus
@@ -47,15 +58,39 @@ wire [`DATA_WIDTH-1:0] alu_out;
 wire [`DATA_WIDTH-1:0] mem_out;
 
 // for debug
-wire diffen;
+// wire diffen;
 wire branch_taken;
 
-/******************************************** exe_mem_reg update ********************************************/
+/******************************************** handshake ********************************************/
+wire ready_go = 1'b1; // data is prepared, ready to go
+reg pipe_is_valid; // pipeline is valid, reg from last stage
+
+assign s_ready = ~pipe_is_valid || (m_ready && ready_go);
+assign m_valid = pipe_is_valid && ready_go;
+
 always @(posedge clk ) begin
-    if (rst )begin //|| bpu_clear_ctrl) begin
+    if (rst) begin
+        pipe_is_valid <= 0;
+    end
+    else if (s_ready) begin
+        pipe_is_valid <= s_valid;
+    end
+end
+
+// always @(posedge clk ) begin
+//     if (rst )begin 
+//         exe_mem_reg <= 0;
+//     end
+//     else begin
+//         exe_mem_reg <= exe_mem_bus;
+//     end
+// end
+
+always @(posedge clk ) begin
+    if (rst) begin
         exe_mem_reg <= 0;
     end
-    else begin
+    else if(s_valid && s_ready) begin
         exe_mem_reg <= exe_mem_bus;
     end
 end
@@ -72,16 +107,19 @@ assign {
     reg_waddr,
     alu_out,
     rs2,
-    diffen,
+    // diffen,
     branch_taken    
 } = exe_mem_reg;
 
 /******************************************** alu_out forwarding ********************************************/
-assign exe_mem_reg_alu_out = alu_out;
+assign exe_mem_reg_alu_out = pipe_is_valid? alu_out : 0;
 
 /******************************************** for forwarding detection ********************************************/
-assign exe_mem_reg_waddr = reg_waddr;
-assign exe_mem_reg_wen = reg_wen;
+assign exe_mem_reg_waddr = pipe_is_valid? reg_waddr : 0;
+assign exe_mem_reg_wen = pipe_is_valid? reg_wen : 0;
+
+/******************************************** for hazard detection ********************************************/
+assign exe_mem_PC = PC;
 
 /******************************************** Data Memory Control ********************************************/
 DataMemCtrl u_DataMemCtrl(
@@ -105,7 +143,7 @@ assign mem_wb_bus = {
     reg_waddr,
     alu_out,
     mem_out,
-    diffen,
+    // diffen,
     branch_taken
 };
 

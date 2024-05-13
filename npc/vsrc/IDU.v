@@ -8,8 +8,11 @@ module IDU (
     // if_id_bus input
     input [`IF_ID_BUS_WIDTH-1:0] if_id_bus,
 
-    // if_id_reg enable update
-    input wire if_id_reg_enable,
+    // // if_id_reg enable update
+    // input wire if_id_reg_enable,
+
+    // hazard detected flag
+    input wire hazard_detected,
 
     // BPU clear control signal
     input wire bpu_clear_ctrl,
@@ -23,9 +26,18 @@ module IDU (
     output wire [`REG_ADDR_WIDTH-1:0] if_id_reg_raddr1,
     output wire [`REG_ADDR_WIDTH-1:0] if_id_reg_raddr2,
 
+    // handshake signals with last stage
+    input wire s_valid,
+    output wire s_ready,
+
+    // handshake signals with next stage
+    output reg m_valid,
+    input wire m_ready,
+
     // id_exe_bus output
     output wire [`ID_EXE_BUS_WIDTH-1:0] id_exe_bus
 );
+
 
 /******************************************** if_id_reg pipeline registers ********************/
 reg [`IF_ID_BUS_WIDTH-1:0] if_id_reg;
@@ -67,14 +79,40 @@ wire [`DATA_WIDTH-1:0] rdata1;
 wire [`DATA_WIDTH-1:0] rdata2;
 
 // for debug
-wire diffen;
+// wire diffen;
 
-/******************************************** if_id_reg update ********************************************/
+/******************************************** handshake ********************************************/
+wire ready_go = ~hazard_detected; // all task in this stage is done, all data is prepared, ready to go
+reg s_valid_r; // reg from last stage, flag to indicate data from lastis valid or not
+wire pipe_is_valid; // pipeline is real valid
+
+assign s_ready = ~pipe_is_valid || (m_ready && ready_go);
+assign m_valid = pipe_is_valid && ready_go;
+assign pipe_is_valid = s_valid_r && ~bpu_clear_ctrl;
+
 always @(posedge clk ) begin
-    if (rst || bpu_clear_ctrl) begin
+    if (rst) begin
+        s_valid_r <= 0;
+    end
+    else if (s_ready) begin
+        s_valid_r <= s_valid;
+    end
+end
+
+// always @(posedge clk ) begin
+//     if (rst || bpu_clear_ctrl) begin
+//         if_id_reg <= 0;
+//     end
+//     else if (if_id_reg_enable) begin
+//         if_id_reg <= if_id_bus;
+//     end
+// end
+
+always @(posedge clk ) begin
+    if (rst) begin
         if_id_reg <= 0;
     end
-    else if (if_id_reg_enable) begin
+    else if(s_valid && s_ready) begin
         if_id_reg <= if_id_bus;
     end
 end
@@ -82,8 +120,8 @@ end
 assign {
     PC,
     Instr,
-    PC_4,
-    diffen
+    PC_4
+    // diffen
 } = if_id_reg;
 
 /******************************************** decoder ********************************************/
@@ -137,8 +175,11 @@ ImmGen u_ImmGen(
 );
 
 /******************************************** for hazard detection ********************************************/
-assign if_id_reg_raddr1 = raddr1;
-assign if_id_reg_raddr2 = raddr2;
+assign if_id_reg_raddr1 = pipe_is_valid? raddr1 : 0;
+assign if_id_reg_raddr2 = pipe_is_valid? raddr2 : 0;
+
+/******************************************** for BPU ********************************************/
+
 
 /******************************************** id_exe_bus output ********************************************/
 assign id_exe_bus = {
@@ -161,8 +202,8 @@ assign id_exe_bus = {
     raddr2,
     reg_waddr,
     rdata1,
-    rdata2,
-    diffen
+    rdata2
+    // diffen
 };
 
 

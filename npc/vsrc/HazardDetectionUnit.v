@@ -6,18 +6,23 @@ module HazardDetectionUnit (
     input wire [`REG_ADDR_WIDTH-1:0] if_id_reg_raddr1,
     input wire [`REG_ADDR_WIDTH-1:0] if_id_reg_raddr2,
 
-    // enable PC change
-    output wire PC_enable,
+    // hazard detected flag
+    output wire hazard_detected
 
-    // enable if_id pipeline register change
-    output wire if_id_reg_enable,
+    // // enable PC change
+    // output wire PC_enable,
 
-    // clear control signal
-    output wire hazard_clear_ctrl
+    // // enable if_id pipeline register change
+    // output wire if_id_reg_enable,
+
+    // // clear control signal
+    // output wire hazard_clear_ctrl
 );
 
-assign PC_enable = (id_exe_reg_mem_ren && ((id_exe_reg_waddr == if_id_reg_raddr1) || (id_exe_reg_waddr == if_id_reg_raddr2)))? 0 : 1; 
-assign if_id_reg_enable = (id_exe_reg_mem_ren && ((id_exe_reg_waddr == if_id_reg_raddr1) || (id_exe_reg_waddr == if_id_reg_raddr2)))? 0 : 1; 
-assign hazard_clear_ctrl = (id_exe_reg_mem_ren && ((id_exe_reg_waddr == if_id_reg_raddr1) || (id_exe_reg_waddr == if_id_reg_raddr2)))? 1 : 0; 
+assign hazard_detected = (id_exe_reg_mem_ren && ((id_exe_reg_waddr == if_id_reg_raddr1) || (id_exe_reg_waddr == if_id_reg_raddr2)))? 1 : 0; 
+
+// assign PC_enable = (id_exe_reg_mem_ren && ((id_exe_reg_waddr == if_id_reg_raddr1) || (id_exe_reg_waddr == if_id_reg_raddr2)))? 0 : 1; 
+// assign if_id_reg_enable = (id_exe_reg_mem_ren && ((id_exe_reg_waddr == if_id_reg_raddr1) || (id_exe_reg_waddr == if_id_reg_raddr2)))? 0 : 1; 
+// assign hazard_clear_ctrl = (id_exe_reg_mem_ren && ((id_exe_reg_waddr == if_id_reg_raddr1) || (id_exe_reg_waddr == if_id_reg_raddr2)))? 1 : 0; 
 
 endmodule
