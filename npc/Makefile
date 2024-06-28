@@ -4,7 +4,7 @@ INC_PATH ?= ./csrc/include
 #verilator编译选项
 VERILATOR = verilator
 VERILATOR_CFLAGS += -MMD --build -cc   \
-				-O3 --x-assign fast --x-initial fast --noassert --trace --trace-fst --trace-threads 2 -I./vsrc
+				-O3 --x-assign fast --x-initial fast --noassert --trace --trace-fst --trace-threads 2 -I./vsrc/include
 #用于存储构建输出文件的目录路径
 BUILD_DIR = ./build
 #用于存储目标文件的目录路径
